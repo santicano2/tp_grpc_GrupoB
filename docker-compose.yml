@@ -1,0 +1,10 @@
+version: "3.8"
+services:
+  server:
+    build: ./server
+    container_name: grpc_server
+    ports:
+      - "50051:50051"
+    volumes:
+      - ./server:/app
+    restart: unless-stopped
