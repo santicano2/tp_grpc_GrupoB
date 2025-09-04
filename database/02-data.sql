@@ -2,16 +2,16 @@ USE empuje_comunitario;
 
 -- Todas las claves son "password123" para testing (las claves están hasheadas con bcrypt)
 INSERT INTO usuarios (nombre_usuario, nombre, apellido, telefono, clave, email, rol, activo) VALUES
-('presidente1', 'María', 'González', '+54911234567', '$2a$12$BuN9BmNHfuZrsox4MHEkB.uyzJVydU2nYGAQx9BQw8qq27cHPQc3a', 'maria.gonzalez@empujecomunitario.org', 'PRESIDENTE', TRUE),
-('vocal1', 'Juan', 'Pérez', '+54911234568', '$2a$12$BuN9BmNHfuZrsox4MHEkB.uyzJVydU2nYGAQx9BQw8qq27cHPQc3a', 'juan.perez@empujecomunitario.org', 'VOCAL', TRUE),
-('vocal2', 'Ana', 'Martínez', '+54911234569', '$2a$12$BuN9BmNHfuZrsox4MHEkB.uyzJVydU2nYGAQx9BQw8qq27cHPQc3a', 'ana.martinez@empujecomunitario.org', 'VOCAL', TRUE),
-('coordinador1', 'Carlos', 'López', '+54911234570', '$2a$12$BuN9BmNHfuZrsox4MHEkB.uyzJVydU2nYGAQx9BQw8qq27cHPQc3a', 'carlos.lopez@empujecomunitario.org', 'COORDINADOR', TRUE),
-('coordinador2', 'Laura', 'Rodríguez', '+54911234571', '$2a$12$BuN9BmNHfuZrsox4MHEkB.uyzJVydU2nYGAQx9BQw8qq27cHPQc3a', 'laura.rodriguez@empujecomunitario.org', 'COORDINADOR', TRUE),
-('voluntario1', 'Pedro', 'Sánchez', '+54911234572', '$2a$12$BuN9BmNHfuZrsox4MHEkB.uyzJVydU2nYGAQx9BQw8qq27cHPQc3a', 'pedro.sanchez@gmail.com', 'VOLUNTARIO', TRUE),
-('voluntario2', 'Sofía', 'García', '+54911234573', '$2a$12$BuN9BmNHfuZrsox4MHEkB.uyzJVydU2nYGAQx9BQw8qq27cHPQc3a', 'sofia.garcia@gmail.com', 'VOLUNTARIO', TRUE),
+('presidente1', 'Maria', 'Gonzalez', '+54911234567', '$2a$12$BuN9BmNHfuZrsox4MHEkB.uyzJVydU2nYGAQx9BQw8qq27cHPQc3a', 'maria.gonzalez@empujecomunitario.org', 'PRESIDENTE', TRUE),
+('vocal1', 'Juan', 'Perez', '+54911234568', '$2a$12$BuN9BmNHfuZrsox4MHEkB.uyzJVydU2nYGAQx9BQw8qq27cHPQc3a', 'juan.perez@empujecomunitario.org', 'VOCAL', TRUE),
+('vocal2', 'Ana', 'Martinez', '+54911234569', '$2a$12$BuN9BmNHfuZrsox4MHEkB.uyzJVydU2nYGAQx9BQw8qq27cHPQc3a', 'ana.martinez@empujecomunitario.org', 'VOCAL', TRUE),
+('coordinador1', 'Carlos', 'Lopez', '+54911234570', '$2a$12$BuN9BmNHfuZrsox4MHEkB.uyzJVydU2nYGAQx9BQw8qq27cHPQc3a', 'carlos.lopez@empujecomunitario.org', 'COORDINADOR', TRUE),
+('coordinador2', 'Laura', 'Rodriguez', '+54911234571', '$2a$12$BuN9BmNHfuZrsox4MHEkB.uyzJVydU2nYGAQx9BQw8qq27cHPQc3a', 'laura.rodriguez@empujecomunitario.org', 'COORDINADOR', TRUE),
+('voluntario1', 'Pedro', 'Sanchez', '+54911234572', '$2a$12$BuN9BmNHfuZrsox4MHEkB.uyzJVydU2nYGAQx9BQw8qq27cHPQc3a', 'pedro.sanchez@gmail.com', 'VOLUNTARIO', TRUE),
+('voluntario2', 'Sofia', 'Garcia', '+54911234573', '$2a$12$BuN9BmNHfuZrsox4MHEkB.uyzJVydU2nYGAQx9BQw8qq27cHPQc3a', 'sofia.garcia@gmail.com', 'VOLUNTARIO', TRUE),
 ('voluntario3', 'Miguel', 'Torres', '+54911234574', '$2a$12$BuN9BmNHfuZrsox4MHEkB.uyzJVydU2nYGAQx9BQw8qq27cHPQc3a', 'miguel.torres@gmail.com', 'VOLUNTARIO', TRUE),
-('voluntario4', 'Carmen', 'Jiménez', '+54911234575', '$2a$12$BuN9BmNHfuZrsox4MHEkB.uyzJVydU2nYGAQx9BQw8qq27cHPQc3a', 'carmen.jimenez@gmail.com', 'VOLUNTARIO', FALSE),
-('coordinador3', 'Roberto', 'Fernández', '+54911234576', '$2a$12$BuN9BmNHfuZrsox4MHEkB.uyzJVydU2nYGAQx9BQw8qq27cHPQc3a', 'roberto.fernandez@empujecomunitario.org', 'COORDINADOR', FALSE);
+('voluntario4', 'Carmen', 'Jimenez', '+54911234575', '$2a$12$BuN9BmNHfuZrsox4MHEkB.uyzJVydU2nYGAQx9BQw8qq27cHPQc3a', 'carmen.jimenez@gmail.com', 'VOLUNTARIO', FALSE),
+('coordinador3', 'Roberto', 'Fernandez', '+54911234576', '$2a$12$BuN9BmNHfuZrsox4MHEkB.uyzJVydU2nYGAQx9BQw8qq27cHPQc3a', 'roberto.fernandez@empujecomunitario.org', 'COORDINADOR', FALSE);
 
 INSERT INTO inventario (categoria, descripcion, cantidad, usuario_alta) VALUES
 -- ROPA
@@ -53,14 +53,14 @@ INSERT INTO inventario (categoria, descripcion, cantidad, usuario_alta) VALUES
 ('UTILES_ESCOLARES', 'Marcadores fluorescentes', 50, 2);
 
 INSERT INTO eventos (nombre, descripcion, fecha_evento, usuario_creacion) VALUES
-('Visita Escuela N° 25', 'Entrega de útiles escolares y actividades recreativas con los niños de primaria', '2025-09-15 14:00:00', 4),
-('Hogar de Ancianos San José', 'Actividades de entretenimiento y compañía para los residentes', '2025-09-20 10:00:00', 5),
-('Centro Comunitario Barrio Sur', 'Distribución de alimentos y ropa para familias necesitadas', '2025-09-25 16:00:00', 4),
-('Jardín de Infantes Arcoíris', 'Entrega de juguetes y libros de cuentos', '2025-10-02 15:30:00', 5),
-('Hospital Pediátrico', 'Visita a niños internados con juguetes y actividades lúdicas', '2025-10-08 11:00:00', 4),
-('Comedor Comunitario La Esperanza', 'Colaboración en la preparación y servicio de alimentos', '2025-10-15 12:00:00', 5),
-('Escuela Técnica N° 12', 'Charla motivacional y entrega de útiles para estudiantes', '2025-10-22 09:00:00', 4),
-('Hogar de Niños Santa María', 'Actividades recreativas y entrega de ropa', '2025-11-05 14:30:00', 5);
+('Visita Escuela N° 25', 'Entrega de utiles escolares y actividades recreativas con los ninos de primaria', '2025-09-15 14:00:00', 4),
+('Hogar de Ancianos San Jose', 'Actividades de entretenimiento y compania para los residentes', '2025-09-20 10:00:00', 5),
+('Centro Comunitario Barrio Sur', 'Distribucion de alimentos y ropa para familias necesitadas', '2025-09-25 16:00:00', 4),
+('Jardin de Infantes Arcoiris', 'Entrega de juguetes y libros de cuentos', '2025-10-02 15:30:00', 5),
+('Hospital Pediatrico', 'Visita a ninos internados con juguetes y actividades ludicas', '2025-10-08 11:00:00', 4),
+('Comedor Comunitario La Esperanza', 'Colaboracion en la preparacion y servicio de alimentos', '2025-10-15 12:00:00', 5),
+('Escuela Tecnica N° 12', 'Charla motivacional y entrega de utiles para estudiantes', '2025-10-22 09:00:00', 4),
+('Hogar de Ninos Santa Maria', 'Actividades recreativas y entrega de ropa', '2025-11-05 14:30:00', 5);
 
 -- Evento 1: Visita Escuela N° 25
 INSERT INTO evento_participaciones (evento_id, usuario_id, asignado_por) VALUES
@@ -69,7 +69,7 @@ INSERT INTO evento_participaciones (evento_id, usuario_id, asignado_por) VALUES
 (1, 7, 4), -- voluntario2 asignado por coordinador1
 (1, 8, 4); -- voluntario3 asignado por coordinador1
 
--- Evento 2: Hogar de Ancianos San José
+-- Evento 2: Hogar de Ancianos San Jose
 INSERT INTO evento_participaciones (evento_id, usuario_id, asignado_por) VALUES
 (2, 5, 5), -- coordinador2 se asigna
 (2, 6, 5), -- voluntario1 asignado por coordinador2
@@ -82,13 +82,13 @@ INSERT INTO evento_participaciones (evento_id, usuario_id, asignado_por) VALUES
 (3, 7, 4), -- voluntario2 asignado por coordinador1
 (3, 8, 4); -- voluntario3 asignado por coordinador1
 
--- Evento 4: Jardín de Infantes Arcoíris
+-- Evento 4: Jardin de Infantes Arcoiris
 INSERT INTO evento_participaciones (evento_id, usuario_id, asignado_por) VALUES
 (4, 5, 5), -- coordinador2 se asigna
 (4, 6, 6), -- voluntario1 se asigna a sí mismo
 (4, 8, 8); -- voluntario3 se asigna a sí mismo
 
--- Evento 5: Hospital Pediátrico
+-- Evento 5: Hospital Pediatrico
 INSERT INTO evento_participaciones (evento_id, usuario_id, asignado_por) VALUES
 (5, 4, 4), -- coordinador1 se asigna
 (5, 5, 1), -- coordinador2 asignado por presidente
@@ -103,13 +103,13 @@ INSERT INTO evento_participaciones (evento_id, usuario_id, asignado_por) VALUES
 (6, 7, 7), -- voluntario2 se asigna a sí mismo
 (6, 8, 7); -- voluntario3 asignado por voluntario2 (esto no debería ser posible según las reglas, pero para pruebas)
 
--- Evento 7: Escuela Técnica N° 12
+-- Evento 7: Escuela Tecnica N° 12
 INSERT INTO evento_participaciones (evento_id, usuario_id, asignado_por) VALUES
 (7, 4, 4), -- coordinador1 se asigna
 (7, 6, 6), -- voluntario1 se asigna a sí mismo
 (7, 8, 6); -- voluntario3 asignado por voluntario1 (esto no debería ser posible según las reglas)
 
--- Evento 8: Hogar de Niños Santa María
+-- Evento 8: Hogar de Ninos Santa Maria
 INSERT INTO evento_participaciones (evento_id, usuario_id, asignado_por) VALUES
 (8, 5, 5), -- coordinador2 se asigna
 (8, 1, 1), -- presidente se asigna
