@@ -8,7 +8,6 @@ from .auth import (
 )
 from .utils import now_utc, hash_password, verify_password
 from .storage import db, User as UserModel, Donation as DonationModel, Event as EventModel
-# Import generated stubs after protoc generation
 from . import users_pb2, users_pb2_grpc
 from . import inventory_pb2, inventory_pb2_grpc
 from . import events_pb2, events_pb2_grpc
@@ -62,34 +61,102 @@ class UsuariosService(users_pb2_grpc.UsuariosServiceServicer):
         actor = require_user(request.actor_username)
         if not actor or not can_manage_users(actor.role):
             context.abort(grpc.StatusCode.PERMISSION_DENIED, "No autorizado")
-        u = db.users.get(request.id)
-        if not u:
-            context.abort(grpc.StatusCode.NOT_FOUND, "Usuario inexistente")
-        # No se modifica clave
-        u.username = request.username or u.username
-        u.name = request.name or u.name
-        u.lastname = request.lastname or u.lastname
-        u.phone = request.phone or u.phone
-        u.email = request.email or u.email
-        u.role = users_pb2.Role.Name(request.role) if request.role is not None else u.role
-        u.active = request.active if request.active is not None else u.active
-        return users_pb2.User(
-            id=u.id, username=u.username, name=u.name, lastname=u.lastname,
-            phone=u.phone, email=u.email, role=users_pb2.Role.Value(u.role), active=u.active
-        )
+        
+        # Obtener usuario actual de la base de datos
+        try:
+            query = "SELECT * FROM usuarios WHERE id = %s"
+            results = db.db.execute_query(query, (request.id,))
+            if not results:
+                context.abort(grpc.StatusCode.NOT_FOUND, "Usuario inexistente")
+            
+            # Construir datos de actualización
+            update_data = {}
+            if request.username:
+                update_data['nombre_usuario'] = request.username
+            if request.name:
+                update_data['nombre'] = request.name
+            if request.lastname:
+                update_data['apellido'] = request.lastname
+            if request.phone:
+                update_data['telefono'] = request.phone
+            if request.email:
+                update_data['email'] = request.email
+            if request.role is not None:
+                update_data['rol'] = users_pb2.Role.Name(request.role)
+            if hasattr(request, 'active') and request.active is not None:
+                update_data['activo'] = request.active
+            
+            # Actualizar en base de datos
+            if update_data:
+                update_fields = []
+                params = []
+                for field, value in update_data.items():
+                    update_fields.append(f"{field} = %s")
+                    params.append(value)
+                
+                params.append(request.id)
+                update_query = f"UPDATE usuarios SET {', '.join(update_fields)} WHERE id = %s"
+                db.db.execute_update(update_query, tuple(params))
+            
+            # Obtener usuario actualizado
+            db._clear_user_cache()
+            updated_results = db.db.execute_query(query, (request.id,))
+            row = updated_results[0]
+            
+            return users_pb2.User(
+                id=row['id'], 
+                username=row['nombre_usuario'], 
+                name=row['nombre'], 
+                lastname=row['apellido'],
+                phone=row['telefono'] or "", 
+                email=row['email'], 
+                role=users_pb2.Role.Value(row['rol']), 
+                active=row['activo']
+            )
+            
+        except Exception as e:
+            context.abort(grpc.StatusCode.INTERNAL, f"Error al actualizar usuario: {str(e)}")
 
     def DeactivateUser(self, request, context):
         actor = require_user(request.actor_username)
         if not actor or not can_manage_users(actor.role):
             context.abort(grpc.StatusCode.PERMISSION_DENIED, "No autorizado")
-        u = db.users.get(request.id)
-        if not u:
-            context.abort(grpc.StatusCode.NOT_FOUND, "Usuario inexistente")
-        u.active = False
-        return users_pb2.User(
-            id=u.id, username=u.username, name=u.name, lastname=u.lastname,
-            phone=u.phone, email=u.email, role=users_pb2.Role.Value(u.role), active=u.active
-        )
+        
+        try:
+            # Desactivar usuario
+            query = "UPDATE usuarios SET activo = 0 WHERE id = %s"
+            rows_affected = db.db.execute_update(query, (request.id,))
+            
+            if rows_affected == 0:
+                context.abort(grpc.StatusCode.NOT_FOUND, "Usuario inexistente")
+            
+            # Remover de eventos futuros
+            remove_query = """
+                DELETE FROM evento_participaciones 
+                WHERE usuario_id = %s 
+                AND evento_id IN (SELECT id FROM eventos WHERE fecha_evento > NOW())
+            """
+            db.db.execute_update(remove_query, (request.id,))
+            
+            # Obtener usuario actualizado
+            db._clear_user_cache()
+            user_query = "SELECT * FROM usuarios WHERE id = %s"
+            results = db.db.execute_query(user_query, (request.id,))
+            row = results[0]
+            
+            return users_pb2.User(
+                id=row['id'], 
+                username=row['nombre_usuario'], 
+                name=row['nombre'], 
+                lastname=row['apellido'],
+                phone=row['telefono'] or "", 
+                email=row['email'], 
+                role=users_pb2.Role.Value(row['rol']), 
+                active=row['activo']
+            )
+            
+        except Exception as e:
+            context.abort(grpc.StatusCode.INTERNAL, f"Error al desactivar usuario: {str(e)}")
 
     def ListUsers(self, request, context):
         users = []
@@ -144,38 +211,92 @@ class DonacionesService(inventory_pb2_grpc.DonacionesServiceServicer):
         actor = require_user(request.actor_username)
         if not actor or not can_manage_inventory(actor.role):
             context.abort(grpc.StatusCode.PERMISSION_DENIED, "No autorizado")
-        d = db.donations.get(request.id)
-        if not d or d.deleted:
-            context.abort(grpc.StatusCode.NOT_FOUND, "Donación inexistente")
-        if request.quantity < 0:
-            context.abort(grpc.StatusCode.INVALID_ARGUMENT, "Cantidad no puede ser negativa")
-        d.description = request.description or d.description
-        d.quantity = request.quantity if request.quantity is not None else d.quantity
-        d.updated_at = now_utc().isoformat()
-        d.updated_by = actor.username
-        return inventory_pb2.DonationItem(
-            id=d.id, category=inventory_pb2.Category.Value(d.category),
-            description=d.description, quantity=d.quantity, deleted=d.deleted,
-            created_at=d.created_at, created_by=d.created_by,
-            updated_at=d.updated_at or "", updated_by=d.updated_by or ""
-        )
+        
+        try:
+            # Verificar que la donación existe y no está eliminada
+            check_query = "SELECT * FROM inventario WHERE id = %s AND eliminado = 0"
+            results = db.db.execute_query(check_query, (request.id,))
+            if not results:
+                context.abort(grpc.StatusCode.NOT_FOUND, "Donación inexistente")
+            
+            if request.quantity < 0:
+                context.abort(grpc.StatusCode.INVALID_ARGUMENT, "Cantidad no puede ser negativa")
+            
+            # Actualizar donación
+            update_data = {}
+            if request.description is not None:
+                update_data['descripcion'] = request.description
+            if request.quantity is not None:
+                update_data['cantidad'] = request.quantity
+            
+            if update_data:
+                update_fields = []
+                params = []
+                for field, value in update_data.items():
+                    update_fields.append(f"{field} = %s")
+                    params.append(value)
+                
+                # Agregar auditoría
+                update_fields.append("usuario_modificacion = %s")
+                params.append(actor.id)
+                params.append(request.id)
+                
+                update_query = f"UPDATE inventario SET {', '.join(update_fields)} WHERE id = %s"
+                db.db.execute_update(update_query, tuple(params))
+            
+            # Obtener donación actualizada
+            updated_results = db.db.execute_query(check_query, (request.id,))
+            row = updated_results[0]
+            
+            return inventory_pb2.DonationItem(
+                id=row['id'], 
+                category=inventory_pb2.Category.Value(row['categoria']),
+                description=row['descripcion'] or "", 
+                quantity=row['cantidad'], 
+                deleted=row['eliminado'],
+                created_at=row['fecha_alta'].isoformat() if row['fecha_alta'] else "",
+                created_by=actor.username,  # Simplificado
+                updated_at=row['fecha_modificacion'].isoformat() if row['fecha_modificacion'] else "",
+                updated_by=actor.username
+            )
+            
+        except Exception as e:
+            context.abort(grpc.StatusCode.INTERNAL, f"Error al actualizar donación: {str(e)}")
 
     def DeleteDonation(self, request, context):
         actor = require_user(request.actor_username)
         if not actor or not can_manage_inventory(actor.role):
             context.abort(grpc.StatusCode.PERMISSION_DENIED, "No autorizado")
-        d = db.donations.get(request.id)
-        if not d or d.deleted:
-            context.abort(grpc.StatusCode.NOT_FOUND, "Donación inexistente")
-        d.deleted = True
-        d.updated_at = now_utc().isoformat()
-        d.updated_by = actor.username
-        return inventory_pb2.DonationItem(
-            id=d.id, category=inventory_pb2.Category.Value(d.category),
-            description=d.description, quantity=d.quantity, deleted=d.deleted,
-            created_at=d.created_at, created_by=d.created_by,
-            updated_at=d.updated_at or "", updated_by=d.updated_by or ""
-        )
+        
+        try:
+            # Verificar que la donación existe y no está eliminada
+            check_query = "SELECT * FROM inventario WHERE id = %s AND eliminado = 0"
+            results = db.db.execute_query(check_query, (request.id,))
+            if not results:
+                context.abort(grpc.StatusCode.NOT_FOUND, "Donación inexistente")
+            
+            # Eliminar
+            delete_query = "UPDATE inventario SET eliminado = 1, usuario_modificacion = %s WHERE id = %s"
+            db.db.execute_update(delete_query, (actor.id, request.id))
+            
+            # Obtener donación actualizada
+            updated_results = db.db.execute_query("SELECT * FROM inventario WHERE id = %s", (request.id,))
+            row = updated_results[0]
+            
+            return inventory_pb2.DonationItem(
+                id=row['id'], 
+                category=inventory_pb2.Category.Value(row['categoria']),
+                description=row['descripcion'] or "", 
+                quantity=row['cantidad'], 
+                deleted=row['eliminado'],
+                created_at=row['fecha_alta'].isoformat() if row['fecha_alta'] else "",
+                created_by=actor.username,  # Simplificado
+                updated_at=row['fecha_modificacion'].isoformat() if row['fecha_modificacion'] else "",
+                updated_by=actor.username
+            )
+            
+        except Exception as e:
+            context.abort(grpc.StatusCode.INTERNAL, f"Error al eliminar donación: {str(e)}")
 
     def ListDonations(self, request, context):
         items = []
@@ -205,37 +326,103 @@ class EventosService(events_pb2_grpc.EventosServiceServicer):
         actor = require_user(request.actor_username)
         if not actor or not can_manage_events(actor.role):
             context.abort(grpc.StatusCode.PERMISSION_DENIED, "No autorizado")
-        e = db.events.get(request.id)
-        if not e:
-            context.abort(grpc.StatusCode.NOT_FOUND, "Evento inexistente")
-        if request.when_iso:
-            new_when = datetime.fromisoformat(request.when_iso)
-            e.when_iso = request.when_iso
-        if request.name: e.name = request.name
-        if request.description: e.description = request.description
-        return events_pb2.Event(id=e.id, name=e.name, description=e.description, when_iso=e.when_iso, members=e.members)
+        
+        try:
+            # Verificar que el evento existe
+            check_query = "SELECT * FROM eventos WHERE id = %s"
+            results = db.db.execute_query(check_query, (request.id,))
+            if not results:
+                context.abort(grpc.StatusCode.NOT_FOUND, "Evento inexistente")
+            
+            # Construir actualización
+            update_data = {}
+            if request.name:
+                update_data['nombre'] = request.name
+            if request.description:
+                update_data['descripcion'] = request.description
+            if request.when_iso:
+                new_when = datetime.fromisoformat(request.when_iso.replace('Z', '+00:00'))
+                update_data['fecha_evento'] = new_when
+            
+            if update_data:
+                update_fields = []
+                params = []
+                for field, value in update_data.items():
+                    update_fields.append(f"{field} = %s")
+                    params.append(value)
+                
+                # Agregar auditoría
+                update_fields.append("usuario_modificacion = %s")
+                params.append(actor.id)
+                params.append(request.id)
+                
+                update_query = f"UPDATE eventos SET {', '.join(update_fields)} WHERE id = %s"
+                db.db.execute_update(update_query, tuple(params))
+            
+            # Obtener evento actualizado con participantes
+            updated_results = db.db.execute_query(check_query, (request.id,))
+            event_row = updated_results[0]
+            
+            # Obtener participantes
+            participants_query = """
+                SELECT u.nombre_usuario
+                FROM evento_participaciones ep
+                JOIN usuarios u ON ep.usuario_id = u.id
+                WHERE ep.evento_id = %s
+            """
+            participants_results = db.db.execute_query(participants_query, (request.id,))
+            members = [row['nombre_usuario'] for row in participants_results]
+            
+            return events_pb2.Event(
+                id=event_row['id'], 
+                name=event_row['nombre'], 
+                description=event_row['descripcion'] or "", 
+                when_iso=event_row['fecha_evento'].isoformat(), 
+                members=members
+            )
+            
+        except Exception as e:
+            context.abort(grpc.StatusCode.INTERNAL, f"Error al actualizar evento: {str(e)}")
 
     def DeleteFutureEvent(self, request, context):
         actor = require_user(request.actor_username)
         if not actor or not can_manage_events(actor.role):
             context.abort(grpc.StatusCode.PERMISSION_DENIED, "No autorizado")
-        e = db.events.get(request.id)
-        if not e:
-            context.abort(grpc.StatusCode.NOT_FOUND, "Evento inexistente")
-        when = datetime.fromisoformat(e.when_iso)
-        if when <= now_utc():
-            context.abort(grpc.StatusCode.FAILED_PRECONDITION, "Solo se puede eliminar eventos a futuro")
-        # eliminación física
-        del db.events[e.id]
-        return events_pb2.google_dot_protobuf_dot_empty__pb2.Empty()
+        
+        try:
+            # Verificar que el evento existe y es futuro
+            check_query = "SELECT * FROM eventos WHERE id = %s"
+            results = db.db.execute_query(check_query, (request.id,))
+            if not results:
+                context.abort(grpc.StatusCode.NOT_FOUND, "Evento inexistente")
+            
+            event_row = results[0]
+            when = event_row['fecha_evento']
+            if when <= now_utc():
+                context.abort(grpc.StatusCode.FAILED_PRECONDITION, "Solo se puede eliminar eventos a futuro")
+            
+            # Eliminar participaciones primero
+            delete_participations = "DELETE FROM evento_participaciones WHERE evento_id = %s"
+            db.db.execute_update(delete_participations, (request.id,))
+            
+            # Eliminar evento
+            delete_event = "DELETE FROM eventos WHERE id = %s"
+            db.db.execute_update(delete_event, (request.id,))
+            
+            return events_pb2.google_dot_protobuf_dot_empty__pb2.Empty()
+            
+        except Exception as e:
+            context.abort(grpc.StatusCode.INTERNAL, f"Error al eliminar evento: {str(e)}")
 
     def AssignOrRemoveMember(self, request, context):
         actor = require_user(request.actor_username)
         if not actor:
             context.abort(grpc.StatusCode.PERMISSION_DENIED, "No autorizado")
+        
         target = db.find_user_by_login(request.username)
         if not target or not target.active:
             context.abort(grpc.StatusCode.NOT_FOUND, "Miembro inexistente o inactivo")
+        
         # Permisos
         if request.username == actor.username:
             # voluntario puede agregarse/quitarse a sí mismo
@@ -244,41 +431,120 @@ class EventosService(events_pb2_grpc.EventosServiceServicer):
         else:
             if not can_manage_events(actor.role):
                 context.abort(grpc.StatusCode.PERMISSION_DENIED, "No autorizado para asignar a otros")
-        e = db.events.get(request.id)
-        if not e:
-            context.abort(grpc.StatusCode.NOT_FOUND, "Evento inexistente")
-        if request.add:
-            if request.username not in e.members:
-                e.members.append(request.username)
-        else:
-            e.members = [m for m in e.members if m != request.username]
-        return events_pb2.Event(id=e.id, name=e.name, description=e.description, when_iso=e.when_iso, members=e.members)
+        
+        try:
+            # Verificar que el evento existe
+            check_query = "SELECT * FROM eventos WHERE id = %s"
+            results = db.db.execute_query(check_query, (request.id,))
+            if not results:
+                context.abort(grpc.StatusCode.NOT_FOUND, "Evento inexistente")
+            
+            event_row = results[0]
+            
+            if request.add:
+                # Agregar participante
+                try:
+                    add_query = """
+                        INSERT INTO evento_participaciones (evento_id, usuario_id, asignado_por)
+                        VALUES (%s, %s, %s)
+                    """
+                    db.db.execute_insert(add_query, (request.id, target.id, actor.id))
+                except:
+                    pass  # Ignorar si ya existe
+            else:
+                # Remover participante
+                remove_query = """
+                    DELETE FROM evento_participaciones 
+                    WHERE evento_id = %s AND usuario_id = %s
+                """
+                db.db.execute_update(remove_query, (request.id, target.id))
+            
+            # Obtener participantes actualizados
+            participants_query = """
+                SELECT u.nombre_usuario
+                FROM evento_participaciones ep
+                JOIN usuarios u ON ep.usuario_id = u.id
+                WHERE ep.evento_id = %s
+            """
+            participants_results = db.db.execute_query(participants_query, (request.id,))
+            members = [row['nombre_usuario'] for row in participants_results]
+            
+            return events_pb2.Event(
+                id=event_row['id'], 
+                name=event_row['nombre'], 
+                description=event_row['descripcion'] or "", 
+                when_iso=event_row['fecha_evento'].isoformat(), 
+                members=members
+            )
+            
+        except Exception as e:
+            context.abort(grpc.StatusCode.INTERNAL, f"Error al asignar/remover miembro: {str(e)}")
 
     def RegisterDistributions(self, request, context):
         actor = require_user(request.actor_username)
         if not actor or not can_manage_events(actor.role):
             context.abort(grpc.StatusCode.PERMISSION_DENIED, "No autorizado")
-        e = db.events.get(request.id)
-        if not e:
-            context.abort(grpc.StatusCode.NOT_FOUND, "Evento inexistente")
-        when = datetime.fromisoformat(e.when_iso)
-        if when > now_utc():
-            context.abort(grpc.StatusCode.FAILED_PRECONDITION, "Solo eventos pasados pueden registrar distribuciones")
-        # Descontar inventario
-        for dist in request.donations:
-            # Buscar por categoría (simple)
-            # Restar de la primera donación activa con misma categoría
-            for d in db.donations.values():
-                if d.deleted: 
-                    continue
-                if d.category == dist.category.upper():
-                    if d.quantity < dist.quantity:
-                        context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Inventario insuficiente para {dist.category}")
-                    d.quantity -= dist.quantity
-                    d.updated_at = now_utc().isoformat()
-                    d.updated_by = actor.username
-                    break
-        return events_pb2.Event(id=e.id, name=e.name, description=e.description, when_iso=e.when_iso, members=e.members)
+        
+        try:
+            # Verificar que el evento existe
+            check_query = "SELECT * FROM eventos WHERE id = %s"
+            results = db.db.execute_query(check_query, (request.id,))
+            if not results:
+                context.abort(grpc.StatusCode.NOT_FOUND, "Evento inexistente")
+            
+            event_row = results[0]
+            when = event_row['fecha_evento']
+            if when > now_utc():
+                context.abort(grpc.StatusCode.FAILED_PRECONDITION, "Solo eventos pasados pueden registrar distribuciones")
+            
+            # Procesar cada donación
+            for dist in request.donations:
+                category = dist.category.upper()
+                quantity_needed = dist.quantity
+                
+                # Buscar items disponibles de esa categoría con suficiente stock
+                available_query = """
+                    SELECT id, cantidad FROM inventario 
+                    WHERE categoria = %s AND eliminado = 0 AND cantidad >= %s
+                    ORDER BY fecha_alta ASC
+                    LIMIT 1
+                """
+                available_results = db.db.execute_query(available_query, (category, quantity_needed))
+                
+                if not available_results:
+                    context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Inventario insuficiente para {category}")
+                
+                item_row = available_results[0]
+                item_id = item_row['id']
+                
+                # Registrar la donación repartida
+                register_query = """
+                    INSERT INTO evento_donaciones (evento_id, inventario_id, cantidad_repartida, registrado_por)
+                    VALUES (%s, %s, %s, %s)
+                """
+                db.db.execute_insert(register_query, (request.id, item_id, quantity_needed, actor.id))
+                
+            
+            # Obtener evento actualizado con participantes
+            participants_query = """
+                SELECT u.nombre_usuario
+                FROM evento_participaciones ep
+                JOIN usuarios u ON ep.usuario_id = u.id
+                WHERE ep.evento_id = %s
+            """
+            participants_results = db.db.execute_query(participants_query, (request.id,))
+            members = [row['nombre_usuario'] for row in participants_results]
+            
+            return events_pb2.Event(
+                id=event_row['id'], 
+                name=event_row['nombre'], 
+                description=event_row['descripcion'] or "", 
+                when_iso=event_row['fecha_evento'].isoformat(), 
+                members=members
+            )
+            
+        except Exception as e:
+            context.abort(grpc.StatusCode.INTERNAL, f"Error al registrar distribuciones: {str(e)}")
 
     def ListEvents(self, request, context):
         items = []
