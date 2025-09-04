@@ -39,7 +39,7 @@ CREATE TABLE eventos (
     usuario_creacion INT,
     usuario_modificacion INT,
     FOREIGN KEY (usuario_creacion) REFERENCES usuarios(id),
-    FOREIGN KEY (usuario_modificacion) REFERENCES usuarios(id),
+    FOREIGN KEY (usuario_modificacion) REFERENCES usuarios(id)
 );
 
 -- muchos a muchos
