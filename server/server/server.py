@@ -6,7 +6,7 @@ import secrets
 from .auth import (
     can_manage_users, can_manage_inventory, can_manage_events, can_participate_events
 )
-from .utils import now_utc, hash_password, verify_password
+from .utils import now_utc, hash_password, verify_password, hash_password_bcrypt
 from .storage import db, User as UserModel, Donation as DonationModel, Event as EventModel
 from . import users_pb2, users_pb2_grpc
 from . import inventory_pb2, inventory_pb2_grpc
@@ -27,9 +27,9 @@ class UsuariosService(users_pb2_grpc.UsuariosServiceServicer):
             context.abort(grpc.StatusCode.PERMISSION_DENIED, "No autorizado")
         if not request.username or not request.name or not request.lastname or not request.email:
             context.abort(grpc.StatusCode.INVALID_ARGUMENT, "Campos obligatorios faltantes")
-        # generar clave random y hashear
+        # generar clave random y hashear con bcrypt
         plain = secrets.token_urlsafe(10)
-        pw_hash, salt = hash_password(plain)
+        pw_hash = hash_password_bcrypt(plain)  # usar bcrypt
         u = UserModel(
             id=0,
             username=request.username,
@@ -40,7 +40,7 @@ class UsuariosService(users_pb2_grpc.UsuariosServiceServicer):
             role=users_pb2.Role.Name(request.role),
             active=True,
             pw_hash=pw_hash,
-            pw_salt=salt,
+            pw_salt="",  # bcrypt no usa salt separado
         )
         try:
             created = db.create_user(u)

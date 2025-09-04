@@ -2,16 +2,16 @@ USE empuje_comunitario;
 
 -- Todas las claves son "password123" para testing (las claves están hasheadas con bcrypt)
 INSERT INTO usuarios (nombre_usuario, nombre, apellido, telefono, clave, email, rol, activo) VALUES
-('presidente1', 'María', 'González', '+54911234567', '$2b$12$LQv3c1yqBwlVHpPjrCv0qeD5aOEjNVtqRCk8Y.ZH.7P1Q8R9F0K2O', 'maria.gonzalez@empujecomunitario.org', 'PRESIDENTE', TRUE),
-('vocal1', 'Juan', 'Pérez', '+54911234568', '$2b$12$LQv3c1yqBwlVHpPjrCv0qeD5aOEjNVtqRCk8Y.ZH.7P1Q8R9F0K2O', 'juan.perez@empujecomunitario.org', 'VOCAL', TRUE),
-('vocal2', 'Ana', 'Martínez', '+54911234569', '$2b$12$LQv3c1yqBwlVHpPjrCv0qeD5aOEjNVtqRCk8Y.ZH.7P1Q8R9F0K2O', 'ana.martinez@empujecomunitario.org', 'VOCAL', TRUE),
-('coordinador1', 'Carlos', 'López', '+54911234570', '$2b$12$LQv3c1yqBwlVHpPjrCv0qeD5aOEjNVtqRCk8Y.ZH.7P1Q8R9F0K2O', 'carlos.lopez@empujecomunitario.org', 'COORDINADOR', TRUE),
-('coordinador2', 'Laura', 'Rodríguez', '+54911234571', '$2b$12$LQv3c1yqBwlVHpPjrCv0qeD5aOEjNVtqRCk8Y.ZH.7P1Q8R9F0K2O', 'laura.rodriguez@empujecomunitario.org', 'COORDINADOR', TRUE),
-('voluntario1', 'Pedro', 'Sánchez', '+54911234572', '$2b$12$LQv3c1yqBwlVHpPjrCv0qeD5aOEjNVtqRCk8Y.ZH.7P1Q8R9F0K2O', 'pedro.sanchez@gmail.com', 'VOLUNTARIO', TRUE),
-('voluntario2', 'Sofía', 'García', '+54911234573', '$2b$12$LQv3c1yqBwlVHpPjrCv0qeD5aOEjNVtqRCk8Y.ZH.7P1Q8R9F0K2O', 'sofia.garcia@gmail.com', 'VOLUNTARIO', TRUE),
-('voluntario3', 'Miguel', 'Torres', '+54911234574', '$2b$12$LQv3c1yqBwlVHpPjrCv0qeD5aOEjNVtqRCk8Y.ZH.7P1Q8R9F0K2O', 'miguel.torres@gmail.com', 'VOLUNTARIO', TRUE),
-('voluntario4', 'Carmen', 'Jiménez', '+54911234575', '$2b$12$LQv3c1yqBwlVHpPjrCv0qeD5aOEjNVtqRCk8Y.ZH.7P1Q8R9F0K2O', 'carmen.jimenez@gmail.com', 'VOLUNTARIO', FALSE),
-('coordinador3', 'Roberto', 'Fernández', '+54911234576', '$2b$12$LQv3c1yqBwlVHpPjrCv0qeD5aOEjNVtqRCk8Y.ZH.7P1Q8R9F0K2O', 'roberto.fernandez@empujecomunitario.org', 'COORDINADOR', FALSE);
+('presidente1', 'María', 'González', '+54911234567', '$2a$12$BuN9BmNHfuZrsox4MHEkB.uyzJVydU2nYGAQx9BQw8qq27cHPQc3a', 'maria.gonzalez@empujecomunitario.org', 'PRESIDENTE', TRUE),
+('vocal1', 'Juan', 'Pérez', '+54911234568', '$2a$12$BuN9BmNHfuZrsox4MHEkB.uyzJVydU2nYGAQx9BQw8qq27cHPQc3a', 'juan.perez@empujecomunitario.org', 'VOCAL', TRUE),
+('vocal2', 'Ana', 'Martínez', '+54911234569', '$2a$12$BuN9BmNHfuZrsox4MHEkB.uyzJVydU2nYGAQx9BQw8qq27cHPQc3a', 'ana.martinez@empujecomunitario.org', 'VOCAL', TRUE),
+('coordinador1', 'Carlos', 'López', '+54911234570', '$2a$12$BuN9BmNHfuZrsox4MHEkB.uyzJVydU2nYGAQx9BQw8qq27cHPQc3a', 'carlos.lopez@empujecomunitario.org', 'COORDINADOR', TRUE),
+('coordinador2', 'Laura', 'Rodríguez', '+54911234571', '$2a$12$BuN9BmNHfuZrsox4MHEkB.uyzJVydU2nYGAQx9BQw8qq27cHPQc3a', 'laura.rodriguez@empujecomunitario.org', 'COORDINADOR', TRUE),
+('voluntario1', 'Pedro', 'Sánchez', '+54911234572', '$2a$12$BuN9BmNHfuZrsox4MHEkB.uyzJVydU2nYGAQx9BQw8qq27cHPQc3a', 'pedro.sanchez@gmail.com', 'VOLUNTARIO', TRUE),
+('voluntario2', 'Sofía', 'García', '+54911234573', '$2a$12$BuN9BmNHfuZrsox4MHEkB.uyzJVydU2nYGAQx9BQw8qq27cHPQc3a', 'sofia.garcia@gmail.com', 'VOLUNTARIO', TRUE),
+('voluntario3', 'Miguel', 'Torres', '+54911234574', '$2a$12$BuN9BmNHfuZrsox4MHEkB.uyzJVydU2nYGAQx9BQw8qq27cHPQc3a', 'miguel.torres@gmail.com', 'VOLUNTARIO', TRUE),
+('voluntario4', 'Carmen', 'Jiménez', '+54911234575', '$2a$12$BuN9BmNHfuZrsox4MHEkB.uyzJVydU2nYGAQx9BQw8qq27cHPQc3a', 'carmen.jimenez@gmail.com', 'VOLUNTARIO', FALSE),
+('coordinador3', 'Roberto', 'Fernández', '+54911234576', '$2a$12$BuN9BmNHfuZrsox4MHEkB.uyzJVydU2nYGAQx9BQw8qq27cHPQc3a', 'roberto.fernandez@empujecomunitario.org', 'COORDINADOR', FALSE);
 
 INSERT INTO inventario (categoria, descripcion, cantidad, usuario_alta) VALUES
 -- ROPA
