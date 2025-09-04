@@ -316,6 +316,9 @@ class EventosService(events_pb2_grpc.EventosServiceServicer):
         if not actor or not can_manage_events(actor.role):
             context.abort(grpc.StatusCode.PERMISSION_DENIED, "No autorizado")
         when = datetime.fromisoformat(request.when_iso)
+        # si la fecha no tiene zona horaria, asumir UTC
+        if when.tzinfo is None:
+            when = when.replace(tzinfo=timezone.utc)
         if when <= now_utc():
             context.abort(grpc.StatusCode.INVALID_ARGUMENT, "El evento debe ser a futuro")
         e = EventModel(id=0, name=request.name, description=request.description, when_iso=request.when_iso)
@@ -342,6 +345,9 @@ class EventosService(events_pb2_grpc.EventosServiceServicer):
                 update_data['descripcion'] = request.description
             if request.when_iso:
                 new_when = datetime.fromisoformat(request.when_iso.replace('Z', '+00:00'))
+                # si la fecha no tiene zona horaria, asumir UTC
+                if new_when.tzinfo is None:
+                    new_when = new_when.replace(tzinfo=timezone.utc)
                 update_data['fecha_evento'] = new_when
             
             if update_data:
