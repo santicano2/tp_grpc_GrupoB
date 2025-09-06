@@ -1,0 +1,48 @@
+syntax = "proto3";
+package ong.events;
+import "google/protobuf/empty.proto";
+
+message Event {
+  int32 id = 1;
+  string name = 2;
+  string description = 3;
+  string when_iso = 4; // ISO8601
+  repeated string members = 5; // usernames
+}
+
+message CreateEventRequest {
+  string actor_username = 1;
+  string name = 2;
+  string description = 3;
+  string when_iso = 4;
+}
+
+message UpdateEventRequest {
+  string actor_username = 1;
+  int32 id = 2;
+  string name = 3;
+  string description = 4;
+  string when_iso = 5;
+}
+
+message EventIdRequest { string actor_username = 1; int32 id = 2; }
+message MemberChangeRequest { string actor_username = 1; int32 id = 2; string username = 3; bool add = 4; }
+message DonationDistribution {
+  string category = 1; // text to keep simple, map to inventory categories client-side
+  int32 quantity = 2;
+}
+message RegisterDistributionRequest {
+  string actor_username = 1;
+  int32 id = 2; // event id
+  repeated DonationDistribution donations = 3;
+}
+message EventList { repeated Event events = 1; }
+
+service EventosService {
+  rpc CreateEvent(CreateEventRequest) returns (Event);
+  rpc UpdateEvent(UpdateEventRequest) returns (Event);
+  rpc DeleteFutureEvent(EventIdRequest) returns (google.protobuf.Empty);
+  rpc AssignOrRemoveMember(MemberChangeRequest) returns (Event);
+  rpc RegisterDistributions(RegisterDistributionRequest) returns (Event);
+  rpc ListEvents(google.protobuf.Empty) returns (EventList);
+}

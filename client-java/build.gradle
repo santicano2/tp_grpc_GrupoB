@@ -1,0 +1,52 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'com.google.protobuf' version '0.9.5'
+}
+
+version = '1.0-SNAPSHOT'
+
+ext {
+    grpcVersion = '1.75.0'
+    protobufVersion = '3.25.8'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation "io.grpc:grpc-netty-shaded:${grpcVersion}"
+    implementation "io.grpc:grpc-protobuf:${grpcVersion}"
+    implementation "io.grpc:grpc-stub:${grpcVersion}"
+    implementation "com.google.protobuf:protobuf-java:${protobufVersion}"
+
+    testImplementation 'junit:junit:4.13.2'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:${protobufVersion}"
+    }
+    plugins {
+        grpc {
+            artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}"
+        }
+    }
+    generateProtoTasks {
+        all().each { task ->
+            task.plugins {
+                grpc {}
+            }
+        }
+    }
+}
+
+application {
+    mainClass = 'client.Cliente'
+}
