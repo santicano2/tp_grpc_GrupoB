@@ -1,10 +1,54 @@
-version: "3.8"
 services:
+  mysql:
+    image: mysql:8.0
+    container_name: empuje_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: empuje_comunitario
+      MYSQL_USER: empuje_user
+      MYSQL_PASSWORD: empuje_password
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: empuje_phpmyadmin
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: empuje_user
+      PMA_PASSWORD: empuje_password
+    ports:
+      - "8080:80"
+    depends_on:
+      - mysql
+    restart: unless-stopped
+
   server:
     build: ./server
     container_name: grpc_server
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: empuje_user
+      DB_PASSWORD: empuje_password
+      DB_NAME: empuje_comunitario
     ports:
       - "50051:50051"
     volumes:
       - ./server:/app
+    depends_on:
+      mysql:
+        condition: service_healthy
     restart: unless-stopped
+
+volumes:
+  mysql_data:
