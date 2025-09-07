@@ -16,11 +16,12 @@ public class Cliente {
         UsuariosServiceGrpc.UsuariosServiceBlockingStub stub = UsuariosServiceGrpc.newBlockingStub(channel);
 
         // Hacer llamado
-        Users.GetUserRequest request = Users.GetUserRequest.newBuilder()
-                .setId(1)
-                .build();
+        Users.LoginRequest request = Users.LoginRequest.newBuilder()
+            .setLogin("presidente1")
+            .setPassword("password123")
+            .build();
 
-        Users.GetUserResponse response = stub.getUser(request);
+        Users.LoginResponse response = stub.login(request);
 
         System.out.println("Respuesta del servidor: " + response);
 

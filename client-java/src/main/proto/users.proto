@@ -70,5 +70,4 @@ service UsuariosService {
   rpc DeactivateUser(UserIdRequest) returns (User);
   rpc ListUsers(google.protobuf.Empty) returns (UserList);
   rpc Login(LoginRequest) returns (LoginResponse);
-  rpc GetUser(GetUserRequest) returns (GetUserResponse);
 }
