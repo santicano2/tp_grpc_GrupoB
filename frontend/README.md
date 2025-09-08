@@ -41,3 +41,14 @@ npm run preview
 - TailwindCSS
 
 ---
+
+---
+
+### TODO
+
+- Hacer Dashboard
+- Hacer gestión de usuarios
+- Hacer gestión de inventario
+- Hacer gestion de eventos
+
+---
