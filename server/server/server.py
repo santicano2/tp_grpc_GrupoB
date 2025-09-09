@@ -173,6 +173,7 @@ class UsuariosService(users_pb2_grpc.UsuariosServiceServicer):
             return users_pb2.LoginResponse(ok=False, message="Usuario/email inexistente")
         if not user.active:
             return users_pb2.LoginResponse(ok=False, message="Usuario inactivo")
+        print(request.password, user.pw_hash, user.pw_salt)
         if not verify_password(request.password, user.pw_hash, user.pw_salt):
             return users_pb2.LoginResponse(ok=False, message="Credenciales incorrectas")
         return users_pb2.LoginResponse(
