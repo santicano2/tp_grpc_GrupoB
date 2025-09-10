@@ -7,7 +7,7 @@ class DatabaseConfig:
     host: str = "localhost"
     port: int = 3306
     user: str = "root"
-    password: str = ""
+    password: str = "1234"
     database: str = "empuje_comunitario"
     charset: str = "utf8mb4"
     
@@ -17,7 +17,7 @@ class DatabaseConfig:
             host=os.getenv('DB_HOST', 'localhost'),
             port=int(os.getenv('DB_PORT', '3306')),
             user=os.getenv('DB_USER', 'root'),
-            password=os.getenv('DB_PASSWORD', ''),
+            password=os.getenv('DB_PASSWORD', '1234'),
             database=os.getenv('DB_NAME', 'empuje_comunitario'),
             charset=os.getenv('DB_CHARSET', 'utf8mb4')
         )

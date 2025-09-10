@@ -114,6 +114,7 @@ class DatabaseStorage:
             if login in self._users_by_email:
                 return self._user_cache.get(self._users_by_email[login])
             
+            
             query = """
                 SELECT * FROM usuarios 
                 WHERE (nombre_usuario = %s OR email = %s) AND activo = 1
@@ -122,6 +123,7 @@ class DatabaseStorage:
             
             if results:
                 row = results[0]
+                print(results)
                 user = User(
                     id=row['id'],
                     username=row['nombre_usuario'],
@@ -179,6 +181,7 @@ class DatabaseStorage:
             creator = self.find_user_by_login(d.created_by)
             creator_id = creator.id if creator else 1
             
+            print(f"[DEBUG] Insertando donación con categoría: '{d.category}'")
             query = """
                 INSERT INTO inventario (categoria, descripcion, cantidad, usuario_alta)
                 VALUES (%s, %s, %s, %s)
