@@ -1,37 +1,62 @@
 # Frontend - Empuje Comunitario
 
-Frontend del sistema Empuje Comunitario, desarrollado en React con Vite usando TailwindCSS.
+Frontend desarrollado con React + Vite para el sistema de gestión de ONG.
 
-### 1. Prerrequisitos
+## Requisitos previos
 
-- Node.js 18+
-- npm (viene con Node)
+- Node.js 16+
+- npm
+- API Gateway ejecutándose en puerto 8080
+- Servidor gRPC Python ejecutándose en puerto 50051
 
-### 2. Instalación de dependencias
+## Instalación
 
 ```bash
 npm install
 ```
 
-### 3. Ejecutar en modo desarrollo
+## Ejecución
 
 ```bash
 npm run dev
 ```
 
-Esto levanta la app en [http://localhost:5173](http://localhost:5173).
+La aplicación se iniciará en `http://localhost:5173`
 
-### 4. Build para producción
+## Usuarios de prueba
 
-```bash
-npm run build
+| Usuario      | Contraseña  | Rol         |
+| ------------ | ----------- | ----------- |
+| presidente1  | password123 | PRESIDENTE  |
+| vocal1       | password123 | VOCAL       |
+| vocal2       | password123 | VOCAL       |
+| coordinador1 | password123 | COORDINADOR |
+| coordinador2 | password123 | COORDINADOR |
+| voluntario1  | password123 | VOLUNTARIO  |
+| voluntario2  | password123 | VOLUNTARIO  |
+| voluntario3  | password123 | VOLUNTARIO  |
+
+## Arquitectura
+
+```
+Frontend (React) → API Gateway (Spring Boot) → Servidor gRPC (Python) → MySQL
+     :5173              :8080                      :50051            :3307
 ```
 
-### 5. Previsualizar build de producción
+## Funcionalidades implementadas
 
-```bash
-npm run preview
-```
+### Autenticación
+
+- Login con usuarios reales de la base de datos
+- Manejo de estados de autenticación
+- Validación de credenciales
+
+### Servicios API
+
+- Servicio de autenticación (login)
+- Servicio de usuarios (crear)
+- Servicio de eventos (listar, crear, asignar miembros)
+- Servicio de donaciones (listar, crear)
 
 ---
 

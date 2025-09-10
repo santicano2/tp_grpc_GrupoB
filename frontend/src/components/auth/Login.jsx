@@ -23,7 +23,7 @@ const Login = () => {
     try {
       const success = await login(credentials.username, credentials.password);
       if (!success) {
-        setError("Crendenciales incorrectas o usuario inactivo");
+        setError("Credenciales incorrectas o usuario inactivo");
       }
     } catch {
       setError("Error al iniciar sesión. Intente nuevamente.");
@@ -91,21 +91,21 @@ const Login = () => {
             {isLoading ? "Iniciando sesión..." : "Iniciar sesión"}
           </Button>
 
-          {/* TODO: Usuario de prueba, reemplazar con datos reales */}
+          {/* Usuarios de prueba */}
           <div className="mt-6 p-4 bg-gray-50 rounded-lg">
             <p className="text-xs text-gray-600 mb-2">Usuarios de prueba:</p>
             <div className="text-xs text-gray-500 space-y-1">
               <div>
-                <strong>Presidente:</strong> presidente / admin123
+                <strong>Presidente:</strong> presidente1 / password123
               </div>
               <div>
-                <strong>Vocal:</strong> vocal01 / vocal123
+                <strong>Vocal:</strong> vocal1 / password123
               </div>
               <div>
-                <strong>Coordinador:</strong> coord01 / coord123
+                <strong>Coordinador:</strong> coordinador1 / password123
               </div>
               <div>
-                <strong>Voluntario:</strong> voluntario01 / vol123
+                <strong>Voluntario:</strong> voluntario1 / password123
               </div>
             </div>
           </div>

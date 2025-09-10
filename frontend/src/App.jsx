@@ -8,9 +8,25 @@ import Dashboard from "./components/dashboard/Dashboard";
 import Sidebar from "./components/layout/Sidebar";
 
 const AppContent = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("dashboard");
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center mb-4 animate-pulse">
+            <span className="text-white font-bold text-xl">EC</span>
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            Empuje Comunitario
+          </h2>
+          <p className="text-gray-600">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return <Login />;
