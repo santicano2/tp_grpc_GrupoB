@@ -9,17 +9,91 @@ Trabajo práctico sobre RPC de la materia Desarrollo de Software en Sistemas Dis
 - Anahí Maitén Mansilla
 - Santiago Martin Cano
 
-## Cómo iniciar el servidor
+## Prerrequisitos
 
-1. Instalar Docker y Docker Compose en tu sistema.
+### Para Docker (Opción recomendada)
 
-```sh
-docker-compose up --build ## Iniciar servidor
-docker-compose logs 			## Ver logs del server
-docker-compose down				## Detener servidor
+- Docker Desktop 4.0+
+- Docker Compose
+- Puertos disponibles: 3307, 8080, 8081, 50051, 5173
+
+### Para desarrollo manual
+
+- **Java**: 17 o superior
+- **Node.js**: 16+ con npm
+- **Python**: 3.9+
+- **Maven**: Incluido en el proyecto (Maven Wrapper)
+- **MySQL**: 8.0+ (o usar Docker solo para la BD)
+
+## Cómo iniciar el sistema completo
+
+### Opción 1: Con Docker (Recomendado)
+
+1. **Instalar Docker y Docker Compose** en tu sistema.
+
+2. **Iniciar todos los servicios**:
+
+   ```bash
+   docker-compose up -d
+   ```
+
+3. **Detener el sistema**:
+   ```bash
+   docker-compose down
+   ```
+
+### Opción 2: Ejecución manual
+
+#### 1. Base de datos MySQL
+
+```bash
+# Iniciar solo la base de datos con Docker
+docker-compose up mysql phpmyadmin -d
 ```
 
-El servidor gRPC queda expuesto en el puerto 50051.
+#### 2. Servidor gRPC (Python)
+
+```bash
+cd server
+python -m venv .venv
+# Windows:
+.venv\Scripts\activate
+# Linux/Mac:
+# source .venv/bin/activate
+
+pip install -r requirements.txt
+python server/server.py
+```
+
+#### 3. API Gateway (Spring Boot)
+
+```bash
+cd API
+./mvnw compile        # Generar clases gRPC
+./mvnw spring-boot:run
+```
+
+#### 4. Frontend (React + Vite)
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### Arquitectura del sistema
+
+```
+Frontend (React)    →    API Gateway (Spring Boot)    →    Servidor gRPC (Python)    →    MySQL
+    :5173                       :8080                          :50051                    :3307
+```
+
+### Acceso a los servicios
+
+- **Frontend**: http://localhost:5173
+- **API Gateway**: http://localhost:8080
+- **Servidor gRPC**: localhost:50051
+- **phpMyAdmin**: http://localhost:8081
 
 ## Probar la API gRPC con Postman
 
@@ -81,3 +155,12 @@ El servidor gRPC queda expuesto en el puerto 50051.
 - `AssignOrRemoveMember` - Gestionar participantes (PRESIDENTE/VOCAL/COORDINADOR)
 - `RegisterDistributions` - Registrar distribuciones (PRESIDENTE/VOCAL/COORDINADOR)
 - `DeleteFutureEvent` - Eliminar evento futuro (PRESIDENTE/VOCAL/COORDINADOR)
+
+### Problemas comunes
+
+#### Error en API Gateway: Maven compilation fails
+
+```bash
+cd API
+./mvnw clean compile   # Limpiar y recompilar
+```
