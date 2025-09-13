@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Login from "./components/auth/Login";
 import Dashboard from "./components/dashboard/Dashboard";
 import InventoryManagement from "./components/inventory/InventoryManagement";
+import EventManagement from "./components/events/EventManagement";
 import Sidebar from "./components/layout/Sidebar";
 
 const AppContent = () => {
@@ -43,8 +44,7 @@ const AppContent = () => {
       case "inventory":
         return <InventoryManagement />;
       case "events":
-        // return <EventManagement />; // TODO: Agregar EventManagement
-        return <Dashboard />;
+        return <EventManagement />;
       default:
         return <Dashboard />;
     }
