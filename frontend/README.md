@@ -71,9 +71,8 @@ Frontend (React) → API Gateway (Spring Boot) → Servidor gRPC (Python) → My
 
 ### TODO
 
-- Hacer Dashboard
-- Hacer gestión de usuarios
-- Hacer gestión de inventario
-- Hacer gestion de eventos
+- Hacer gestión de usuarios y conectar a API (datos del server)
+- Conectar gestion de inventario a API (datos del server)
+- Conectar gestion de eventos a API (datos del server)
 
 ---
