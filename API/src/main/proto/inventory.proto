@@ -41,6 +41,6 @@ message DonationList { repeated DonationItem items = 1; }
 service DonacionesService {
   rpc CreateDonation(CreateDonationRequest) returns (DonationItem);
   rpc UpdateDonation(UpdateDonationRequest) returns (DonationItem);
-  rpc DeleteDonation(DonationIdRequest) returns (DonationItem); // baja lógica
+  rpc DeleteDonation(DonationIdRequest) returns (google.protobuf.Empty); // baja lógica
   rpc ListDonations(google.protobuf.Empty) returns (DonationList);
 }

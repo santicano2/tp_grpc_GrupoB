@@ -58,7 +58,11 @@ message GetUserResponse {
   User user = 1;
 }
 
-message UserIdRequest { string actor_username = 1; int32 id = 2; }
+message DeactivateUserRequest {
+ string actor_username = 1; // quien ejecuta
+ string username = 2;
+}
+
 message UserList { repeated User users = 1; }
 
 message LoginRequest { string login = 1; string password = 2; } // login por user o email
@@ -67,7 +71,7 @@ message LoginResponse { bool ok = 1; string message = 2; User user = 3; }
 service UsuariosService {
   rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
   rpc UpdateUser(UpdateUserRequest) returns (User);
-  rpc DeactivateUser(UserIdRequest) returns (User);
+  rpc DeactivateUser(DeactivateUserRequest) returns (User);
   rpc ListUsers(google.protobuf.Empty) returns (UserList);
   rpc Login(LoginRequest) returns (LoginResponse);
 }

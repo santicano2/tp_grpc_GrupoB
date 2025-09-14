@@ -1,11 +1,24 @@
 package com.example.api.controller;
 
-import ong.inventory.Inventory;
-import com.example.api.service.DonacionClientService;
-import com.example.api.dto.DonationItemDTO;
-import java.util.List;
 import java.util.ArrayList;
-import org.springframework.web.bind.annotation.*;
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.api.dto.DonationItemDTO;
+import com.example.api.service.DonacionClientService;
+
+import ong.inventory.Inventory;
 
 @RestController
 @RequestMapping("/donaciones")
@@ -19,9 +32,9 @@ public class DonacionController {
 
     @PostMapping("/crear")
     public DonationItemDTO crear(@RequestParam String actor,
-                                 @RequestParam String categoria,
-                                 @RequestParam String descripcion,
-                                 @RequestParam int cantidad) {
+                                @RequestParam String categoria,
+                                @RequestParam String descripcion,
+                                @RequestParam int cantidad) {
         Inventory.Category catEnum;
         try {
             catEnum = Inventory.Category.valueOf(categoria.toUpperCase());
@@ -42,6 +55,29 @@ public class DonacionController {
             return dtos;
     }
 
+        @PutMapping("/modificar/{id}")
+    public ResponseEntity<DonationItemDTO> modificar(@PathVariable int id,  @RequestParam String actor, @RequestBody DonationItemDTO donationDTO) {
+        if (id != donationDTO.getId()) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        try {
+            Inventory.DonationItem modifiedItem = service.modificarDonacion(donationDTO, actor);
+            return new ResponseEntity<>(mapToDTO(modifiedItem), HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @DeleteMapping("/eliminar/{id}")
+    public ResponseEntity<Void> eliminar(@PathVariable int id,  @RequestParam String actor) {
+        try {
+            service.bajaDonacion(id, actor);
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
+
         private DonationItemDTO mapToDTO(Inventory.DonationItem item) {
             DonationItemDTO dto = new DonationItemDTO();
             dto.setId(item.getId());
@@ -55,4 +91,6 @@ public class DonacionController {
             dto.setUpdatedBy(item.getUpdatedBy());
             return dto;
         }
+
+
 }

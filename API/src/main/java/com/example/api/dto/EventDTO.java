@@ -1,32 +1,38 @@
 package com.example.api.dto;
 
+import java.util.List;
+
 public class EventDTO {
     private int id;
-    private String nombre;
-    private String descripcion;
-    private String fechaEvento;
-    private int usuarioCreacion;
-    private int modificadoPor;
-    private String fechaModificacion;
+    private String name;
+    private String description;
+    private String whenIso;
+    private List<String> members;
+    private String createdBy;
+    private String modifiedBy;
+    private String modificationDate;
 
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
 
-    public String getNombre() { return nombre; }
-    public void setNombre(String nombre) { this.nombre = nombre; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public String getDescripcion() { return descripcion; }
-    public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 
-    public String getFechaEvento() { return fechaEvento; }
-    public void setFechaEvento(String fechaEvento) { this.fechaEvento = fechaEvento; }
+    public String getWhenIso() { return whenIso; }
+    public void setWhenIso(String whenIso) { this.whenIso = whenIso; }
 
-    public int getUsuarioCreacion() { return usuarioCreacion; }
-    public void setUsuarioCreacion(int usuarioCreacion) { this.usuarioCreacion = usuarioCreacion; }
+    public List<String> getMembers() { return members; }
+    public void setMembers(List<String> members) { this.members = members; }
 
-    public int getModificadoPor() { return modificadoPor; }
-    public void setModificadoPor(int modificadoPor) { this.modificadoPor = modificadoPor; }
+    public String getCreatedBy() { return createdBy; }
+    public void setCreatedBy(String createdBy) { this.createdBy = createdBy; }
 
-    public String getFechaModificacion() { return fechaModificacion; }
-    public void setFechaModificacion(String fechaModificacion) { this.fechaModificacion = fechaModificacion; }
+    public String getModifiedBy() { return modifiedBy; }
+    public void setModifiedBy(String modifiedBy) { this.modifiedBy = modifiedBy; }
+
+    public String getModificationDate() { return modificationDate; }
+    public void setModificationDate(String modificationDate) { this.modificationDate = modificationDate; }
 }

@@ -8,6 +8,9 @@ message Event {
   string description = 3;
   string when_iso = 4; // ISO8601
   repeated string members = 5; // usernames
+  string created_by = 6;
+  string modified_by = 7;
+  string modification_date = 8;
 }
 
 message CreateEventRequest {
@@ -25,8 +28,18 @@ message UpdateEventRequest {
   string when_iso = 5;
 }
 
-message EventIdRequest { string actor_username = 1; int32 id = 2; }
-message MemberChangeRequest { string actor_username = 1; int32 id = 2; string username = 3; bool add = 4; }
+message EventIdRequest {
+  string actor_username = 1;
+  int32 id = 2;
+}
+
+message MemberChangeRequest {
+  string actor_username = 1;
+  int32 id = 2;
+  string username = 3;
+  bool add = 4;
+}
+
 message DonationDistribution {
   string category = 1; // text to keep simple, map to inventory categories client-side
   int32 quantity = 2;
