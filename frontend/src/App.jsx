@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
 import Login from "./components/auth/Login";
 import Dashboard from "./components/dashboard/Dashboard";
+import UserManagement from "./components/users/UserManagement";
 import InventoryManagement from "./components/inventory/InventoryManagement";
 import EventManagement from "./components/events/EventManagement";
 import Sidebar from "./components/layout/Sidebar";
@@ -39,8 +40,7 @@ const AppContent = () => {
   const renderContent = () => {
     switch (activeSection) {
       case "users":
-        // return <UserManagement />; // TODO: Agregar UserManagement
-        return <Dashboard />;
+        return <UserManagement />; 
       case "inventory":
         return <InventoryManagement />;
       case "events":
