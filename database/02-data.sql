@@ -52,15 +52,21 @@ INSERT INTO inventario (categoria, descripcion, cantidad, usuario_alta) VALUES
 ('UTILES_ESCOLARES', 'Mochilas escolares', 22, 3),
 ('UTILES_ESCOLARES', 'Marcadores fluorescentes', 50, 2);
 
-INSERT INTO eventos (nombre, descripcion, fecha_evento, usuario_creacion) VALUES
-('Visita Escuela N° 25', 'Entrega de utiles escolares y actividades recreativas con los ninos de primaria', '2025-09-15 14:00:00', 4),
-('Hogar de Ancianos San Jose', 'Actividades de entretenimiento y compania para los residentes', '2025-09-20 10:00:00', 5),
-('Centro Comunitario Barrio Sur', 'Distribucion de alimentos y ropa para familias necesitadas', '2025-09-25 16:00:00', 4),
-('Jardin de Infantes Arcoiris', 'Entrega de juguetes y libros de cuentos', '2025-10-02 15:30:00', 5),
-('Hospital Pediatrico', 'Visita a ninos internados con juguetes y actividades ludicas', '2025-10-08 11:00:00', 4),
-('Comedor Comunitario La Esperanza', 'Colaboracion en la preparacion y servicio de alimentos', '2025-10-15 12:00:00', 5),
-('Escuela Tecnica N° 12', 'Charla motivacional y entrega de utiles para estudiantes', '2025-10-22 09:00:00', 4),
-('Hogar de Ninos Santa Maria', 'Actividades recreativas y entrega de ropa', '2025-11-05 14:30:00', 5);
+INSERT INTO eventos (id, nombre, descripcion, fecha_evento, usuario_creacion) VALUES
+(1, 'Visita Escuela N 25', 'Entrega de utiles escolares y actividades recreativas con los ninos de primaria', '2025-09-15 14:00:00', 4),
+(2, 'Hogar de Ancianos San Jose', 'Actividades de entretenimiento y compania para los residentes', '2025-09-20 10:00:00', 5),
+(3, 'Centro Comunitario Barrio Sur', 'Distribucion de alimentos y ropa para familias necesitadas', '2025-09-25 16:00:00', 4),
+(4, 'Jardin de Infantes Arcoiris', 'Entrega de juguetes y libros de cuentos', '2025-10-02 15:30:00', 5),
+(5, 'Hospital Pediatrico', 'Visita a ninos internados con juguetes y actividades ludicas', '2025-10-08 11:00:00', 4),
+(6, 'Comedor Comunitario La Esperanza', 'Colaboracion en la preparacion y servicio de alimentos', '2025-10-15 12:00:00', 5),
+(7, 'Escuela Tecnica N 12', 'Charla motivacional y entrega de utiles para estudiantes', '2025-10-22 09:00:00', 4),
+(8, 'Hogar de Ninos Santa Maria', 'Actividades recreativas y entrega de ropa', '2025-11-05 14:30:00', 5),
+(9, 'Campana de Donacion de Ropa', 'Recoleccion masiva de ropa en desuso para familias necesitadas', '2025-08-15 09:00:00', 4),
+(10, 'Feria de Salud Barrio Norte', 'Controles medicos gratuitos y charlas sobre prevencion', '2025-08-20 08:00:00', 5),
+(11, 'Merienda Solidaria Plaza Central', 'Distribucion de merienda para ninos en situacion de calle', '2025-08-25 16:00:00', 4),
+(12, 'Taller de Oficios Centro Juvenil', 'Ensenanza de carpinteria basica para jovenes', '2025-09-01 14:00:00', 5),
+(13, 'Limpieza Rio San Juan', 'Jornada de limpieza y concientizacion ambiental', '2025-09-05 07:00:00', 4),
+(14, 'Entrega de Viandas Hospital Municipal', 'Preparacion y entrega de comida para familiares de pacientes', '2025-09-10 12:00:00', 5);
 
 -- Evento 1: Visita Escuela N° 25
 INSERT INTO evento_participaciones (evento_id, usuario_id, asignado_por) VALUES
@@ -115,7 +121,49 @@ INSERT INTO evento_participaciones (evento_id, usuario_id, asignado_por) VALUES
 (8, 1, 1), -- presidente se asigna
 (8, 6, 5), -- voluntario1 asignado por coordinador2
 (8, 7, 5), -- voluntario2 asignado por coordinador2
-(8, 8, 8); -- voluntario3 se asigna a sí mismo
+(8, 8, 8); -- voluntario3 se asigna a si mismo
+
+-- Eventos pasados participaciones
+-- Evento 9: Campana de Donacion de Ropa
+INSERT INTO evento_participaciones (evento_id, usuario_id, asignado_por) VALUES
+(9, 4, 4), -- coordinador1 se asigna
+(9, 2, 2), -- vocal1 se asigna
+(9, 6, 4), -- voluntario1 asignado por coordinador1
+(9, 7, 4); -- voluntario2 asignado por coordinador1
+
+-- Evento 10: Feria de Salud Barrio Norte
+INSERT INTO evento_participaciones (evento_id, usuario_id, asignado_por) VALUES
+(10, 5, 5), -- coordinador2 se asigna
+(10, 3, 3), -- vocal2 se asigna
+(10, 8, 5); -- voluntario3 asignado por coordinador2
+
+-- Evento 11: Merienda Solidaria Plaza Central
+INSERT INTO evento_participaciones (evento_id, usuario_id, asignado_por) VALUES
+(11, 4, 4), -- coordinador1 se asigna
+(11, 6, 6), -- voluntario1 se asigna
+(11, 7, 6), -- voluntario2 asignado por voluntario1
+(11, 8, 4); -- voluntario3 asignado por coordinador1
+
+-- Evento 12: Taller de Oficios Centro Juvenil
+INSERT INTO evento_participaciones (evento_id, usuario_id, asignado_por) VALUES
+(12, 5, 5), -- coordinador2 se asigna
+(12, 1, 1), -- presidente se asigna
+(12, 6, 5); -- voluntario1 asignado por coordinador2
+
+-- Evento 13: Limpieza Rio San Juan
+INSERT INTO evento_participaciones (evento_id, usuario_id, asignado_por) VALUES
+(13, 4, 4), -- coordinador1 se asigna
+(13, 5, 4), -- coordinador2 asignado por coordinador1
+(13, 6, 4), -- voluntario1 asignado por coordinador1
+(13, 7, 4), -- voluntario2 asignado por coordinador1
+(13, 8, 4); -- voluntario3 asignado por coordinador1
+
+-- Evento 14: Entrega de Viandas Hospital Municipal
+INSERT INTO evento_participaciones (evento_id, usuario_id, asignado_por) VALUES
+(14, 5, 5), -- coordinador2 se asigna
+(14, 2, 2), -- vocal1 se asigna
+(14, 7, 5), -- voluntario2 asignado por coordinador2
+(14, 8, 5); -- voluntario3 asignado por coordinador2
 
 SELECT 'USUARIOS' as tabla, COUNT(*) as cantidad FROM usuarios
 UNION ALL
@@ -124,3 +172,15 @@ UNION ALL
 SELECT 'EVENTOS', COUNT(*) FROM eventos
 UNION ALL
 SELECT 'PARTICIPACIONES', COUNT(*) FROM evento_participaciones;
+
+-- Trigger para validar fechas futuras en nuevos eventos
+DELIMITER //
+CREATE TRIGGER validate_evento_fecha_insert
+    BEFORE INSERT ON eventos
+    FOR EACH ROW
+BEGIN
+    IF NEW.fecha_evento <= NOW() THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'La fecha del evento debe ser futura';
+    END IF;
+END//
+DELIMITER ;

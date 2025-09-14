@@ -75,18 +75,6 @@ CREATE INDEX idx_eventos_fecha ON eventos(fecha_evento);
 CREATE INDEX idx_participaciones_evento ON evento_participaciones(evento_id);
 CREATE INDEX idx_participaciones_usuario ON evento_participaciones(usuario_id);
 
--- validar que la fecha del evento sea futura (solo para nuevos eventos)
-DELIMITER //
-CREATE TRIGGER validate_evento_fecha_insert
-    BEFORE INSERT ON eventos
-    FOR EACH ROW
-BEGIN
-    IF NEW.fecha_evento <= NOW() THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'La fecha del evento debe ser futura';
-    END IF;
-END//
-DELIMITER ;
-
 -- actualizar inventario cuando se registran donaciones repartidas
 DELIMITER //
 CREATE TRIGGER update_inventario_after_donacion
