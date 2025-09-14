@@ -138,6 +138,26 @@ class ApiService {
       body: formData,
     });
   }
+
+  // ======== DASHBOARD ========
+
+  /**
+   * Obtener estadísticas del dashboard
+   * @returns {Promise<Object>} Estadísticas del dashboard
+   */
+
+  async getDashboardStats() {
+    return this.request("/dashboard/stats");
+  }
+
+  /**
+   * Obtener lista de usuarios (para contar activos)
+   * @returns {Promise<Array>} Lista de usuarios
+   */
+
+  async getUsers() {
+    return this.request("/usuarios/listar");
+  }
 }
 
 const apiService = new ApiService();

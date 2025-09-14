@@ -66,4 +66,8 @@ public class UsuarioClientService {
             .build();
         stub.deactivateUser(request);
     }
+
+    public Users.UserList listarUsuarios() {
+        return stub.listUsers(com.google.protobuf.Empty.getDefaultInstance());
+    }
 }

@@ -1,8 +1,12 @@
 package com.example.api.controller;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -60,6 +64,25 @@ public class UsuarioController {
         return dto;
     }
 
+    @GetMapping("/listar")
+    public List<UserDTO> listar() {
+        try {
+            Users.UserList userList = usuarioClientService.listarUsuarios();
+            List<UserDTO> dtos = new ArrayList<>();
+            
+            for (Users.User user : userList.getUsersList()) {
+                dtos.add(mapToDTO(user));
+            }
+            
+            return dtos;
+        } catch (Exception e) {
+            // si hay error con el servidor gRPC, log del error y devolver lista vacía
+            System.err.println("Error al obtener usuarios del servidor gRPC: " + e.getMessage());
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
+
 
         @PutMapping("/modificar/{id}")
     public ResponseEntity<UserDTO> modificar(@PathVariable int id, @RequestBody UserDTO userDto,  @RequestParam String actor) {
@@ -83,11 +106,14 @@ public class UsuarioController {
 
     private UserDTO mapToDTO(Users.User user) {
         UserDTO dto = new UserDTO();
+        dto.setId(user.getId());
         dto.setUsername(user.getUsername());
         dto.setName(user.getName());
         dto.setLastname(user.getLastname());
+        dto.setPhone(user.getPhone());
         dto.setEmail(user.getEmail());
         dto.setRole(user.getRole().name());
+        dto.setActive(user.getActive());
         return dto;
     }
 }
