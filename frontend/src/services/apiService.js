@@ -72,6 +72,54 @@ class ApiService {
     });
   }
 
+  /**
+   * Obtener lista de usuarios
+   * @returns {Promise<Array>} Lista de usuarios
+   */
+
+  async getUsers() {
+    return this.request("/usuarios/listar");
+  }
+
+  /**
+   * Modificar usuario existente
+   * @param {number} id - ID del usuario
+   * @param {Object} userData - Datos del usuario
+   * @param {string} actor - Usuario que realiza la acción
+   * @returns {Promise<Object>} Usuario modificado
+   */
+
+  async updateUser(id, userData, actor) {
+    return this.request(
+      `/usuarios/modificar/${id}?actor=${encodeURIComponent(actor)}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(userData),
+      }
+    );
+  }
+
+  /**
+   * Dar de baja a un usuario
+   * @param {string} username - Username del usuario
+   * @param {string} actor - Usuario que realiza la acción
+   * @returns {Promise<void>}
+   */
+
+  async deactivateUser(username, actor) {
+    return this.request(
+      `/usuarios/baja/${encodeURIComponent(
+        username
+      )}?actor=${encodeURIComponent(actor)}`,
+      {
+        method: "DELETE",
+      }
+    );
+  }
+
   // ======== EVENTOS ========
 
   /**
@@ -148,15 +196,6 @@ class ApiService {
 
   async getDashboardStats() {
     return this.request("/dashboard/stats");
-  }
-
-  /**
-   * Obtener lista de usuarios (para contar activos)
-   * @returns {Promise<Array>} Lista de usuarios
-   */
-
-  async getUsers() {
-    return this.request("/usuarios/listar");
   }
 }
 

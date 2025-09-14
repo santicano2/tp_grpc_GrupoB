@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Plus, Edit, UserX, UserCheck } from "lucide-react";
+import { Plus, Edit, UserX, UserCheck, RefreshCw } from "lucide-react";
 
 import { useAuth } from "../../contexts/AuthContext";
-import { mockUsers } from "../../data/mockData";
+import { useUserManagement } from "../../hooks/useUserManagement";
 
 import Button from "../ui/Button";
 import Modal from "../ui/Modal";
@@ -18,10 +18,19 @@ import UserForm from "./UserForm";
 
 const UserManagement = () => {
   const { user } = useAuth();
-  const [users, setUsers] = useState(mockUsers);
+  const {
+    users,
+    loading,
+    error,
+    createUser,
+    updateUser,
+    toggleUserStatus,
+    refreshUsers,
+  } = useUserManagement();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // solo el presidente puede acceder
   if (user?.role !== "PRESIDENTE") {
@@ -43,37 +52,29 @@ const UserManagement = () => {
   };
 
   const handleSaveUser = async (userData) => {
-    setIsLoading(true);
+    setIsSubmitting(true);
     try {
       if (editingUser) {
         // actualizar usuario existente
-        setUsers(
-          users.map((u) =>
-            u.id === editingUser.id ? { ...u, ...userData } : u
-          )
-        );
+        await updateUser(editingUser.id, userData);
       } else {
         // crear nuevo usuario
-        const newUser = {
-          id: Date.now().toString(),
-          ...userData,
-          createdAt: new Date().toISOString(),
-          password: Math.random().toString(36).substring(2, 15), // Password generado aleatoriamente
-        };
-        setUsers([...users, newUser]);
+        await createUser(userData);
       }
       handleCloseModal();
     } catch (error) {
       console.error("Error al guardar usuario:", error);
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
-  const handleToggleUserStatus = (userId) => {
-    setUsers(
-      users.map((u) => (u.id === userId ? { ...u, isActive: !u.isActive } : u))
-    );
+  const handleToggleUserStatus = async (targetUser) => {
+    try {
+      await toggleUserStatus(targetUser);
+    } catch (error) {
+      console.error("Error al cambiar estado del usuario:", error);
+    }
   };
 
   const getRoleBadgeColor = (role) => {
@@ -86,6 +87,22 @@ const UserManagement = () => {
     return colors[role];
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center mb-4 animate-pulse">
+            <span className="text-white font-bold text-xl">EC</span>
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            Cargando Usuarios
+          </h2>
+          <p className="text-gray-600">Obteniendo datos...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -95,11 +112,25 @@ const UserManagement = () => {
           </h1>
           <p className="text-gray-600">Administra los usuarios del sistema</p>
         </div>
-        <Button onClick={() => handleOpenModal()}>
-          <Plus className="w-4 h-4 mr-2" />
-          Nuevo Usuario
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={refreshUsers} disabled={loading}>
+            <RefreshCw
+              className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`}
+            />
+            Actualizar
+          </Button>
+          <Button onClick={() => handleOpenModal()}>
+            <Plus className="w-4 h-4 mr-2" />
+            Nuevo Usuario
+          </Button>
+        </div>
       </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+          {error}
+        </div>
+      )}
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <Table>
@@ -137,12 +168,12 @@ const UserManagement = () => {
                 <TableData>
                   <span
                     className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      user.isActive
+                      user.active
                         ? "bg-green-100 text-green-800"
                         : "bg-red-100 text-red-800"
                     }`}
                   >
-                    {user.isActive ? "Activo" : "Inactivo"}
+                    {user.active ? "Activo" : "Inactivo"}
                   </span>
                 </TableData>
                 <TableData>
@@ -155,17 +186,17 @@ const UserManagement = () => {
                       <Edit className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => handleToggleUserStatus(user.id)}
+                      onClick={() => handleToggleUserStatus(user)}
                       className={`${
-                        user.isActive
+                        user.active
                           ? "text-red-600 hover:text-red-900"
                           : "text-green-600 hover:text-green-900"
                       }`}
                       title={
-                        user.isActive ? "Desactivar usuario" : "Activar usuario"
+                        user.active ? "Desactivar usuario" : "Activar usuario"
                       }
                     >
-                      {user.isActive ? (
+                      {user.active ? (
                         <UserX className="w-4 h-4" />
                       ) : (
                         <UserCheck className="w-4 h-4" />
@@ -189,7 +220,7 @@ const UserManagement = () => {
           user={editingUser}
           onSave={handleSaveUser}
           onCancel={handleCloseModal}
-          isLoading={isLoading}
+          isLoading={isSubmitting}
         />
       </Modal>
     </div>

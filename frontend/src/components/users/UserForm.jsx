@@ -8,11 +8,11 @@ const UserForm = ({ user, onSave, onCancel, isLoading }) => {
   const [formData, setFormData] = useState({
     username: "",
     name: "",
-    lastName: "",
+    lastname: "",
     phone: "",
     email: "",
     role: "VOLUNTARIO",
-    isActive: true,
+    active: true,
   });
 
   const [errors, setErrors] = useState({});
@@ -22,11 +22,11 @@ const UserForm = ({ user, onSave, onCancel, isLoading }) => {
       setFormData({
         username: user.username,
         name: user.name,
-        lastName: user.lastName,
+        lastname: user.lastname,
         phone: user.phone || "",
         email: user.email,
         role: user.role,
-        isActive: user.isActive,
+        active: user.active,
       });
     }
   }, [user]);
@@ -55,8 +55,8 @@ const UserForm = ({ user, onSave, onCancel, isLoading }) => {
     if (!formData.username.trim())
       newErrors.username = "El nombre de usuario es obligatorio";
     if (!formData.name.trim()) newErrors.name = "El nombre es obligatorio";
-    if (!formData.lastName.trim())
-      newErrors.lastName = "El apellido es obligatorio";
+    if (!formData.lastname.trim())
+      newErrors.lastname = "El apellido es obligatorio";
     if (!formData.email.trim()) newErrors.email = "El email es obligatorio";
 
     // validar formato de email
@@ -111,10 +111,10 @@ const UserForm = ({ user, onSave, onCancel, isLoading }) => {
 
         <Input
           label="Apellido *"
-          name="lastName"
-          value={formData.lastName}
+          name="lastname"
+          value={formData.lastname}
           onChange={handleChange}
-          error={errors.lastName}
+          error={errors.lastname}
           disabled={isLoading}
         />
 
@@ -140,14 +140,14 @@ const UserForm = ({ user, onSave, onCancel, isLoading }) => {
       <div className="flex items-center">
         <input
           type="checkbox"
-          id="isActive"
-          name="isActive"
-          checked={formData.isActive}
+          id="active"
+          name="active"
+          checked={formData.active}
           onChange={handleChange}
           disabled={isLoading}
           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
         />
-        <label htmlFor="isActive" className="ml-2 block text-sm text-gray-900">
+        <label htmlFor="active" className="ml-2 block text-sm text-gray-900">
           Usuario activo
         </label>
       </div>
