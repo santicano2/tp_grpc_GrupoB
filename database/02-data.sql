@@ -1,6 +1,6 @@
 USE empuje_comunitario;
 
--- Todas las claves son "password123" para testing (las claves están hasheadas con bcrypt)
+-- Todas las claves son "password123" para testing (las claves estan hasheadas con bcrypt)
 INSERT INTO usuarios (nombre_usuario, nombre, apellido, telefono, clave, email, rol, activo) VALUES
 ('presidente1', 'Maria', 'Gonzalez', '+54911234567', '$2a$12$BuN9BmNHfuZrsox4MHEkB.uyzJVydU2nYGAQx9BQw8qq27cHPQc3a', 'maria.gonzalez@empujecomunitario.org', 'PRESIDENTE', TRUE),
 ('vocal1', 'Juan', 'Perez', '+54911234568', '$2a$12$BuN9BmNHfuZrsox4MHEkB.uyzJVydU2nYGAQx9BQw8qq27cHPQc3a', 'juan.perez@empujecomunitario.org', 'VOCAL', TRUE),
@@ -15,11 +15,11 @@ INSERT INTO usuarios (nombre_usuario, nombre, apellido, telefono, clave, email, 
 
 INSERT INTO inventario (categoria, descripcion, cantidad, usuario_alta) VALUES
 -- ROPA
-('ROPA', 'Remeras de algodón talle M', 25, 2),
+('ROPA', 'Remeras de algodon talle M', 25, 2),
 ('ROPA', 'Pantalones jeans varios talles', 18, 2),
 ('ROPA', 'Camperas de abrigo', 12, 3),
 ('ROPA', 'Zapatillas deportivas', 8, 2),
-('ROPA', 'Vestidos para niñas', 15, 3),
+('ROPA', 'Vestidos para ninas', 15, 3),
 ('ROPA', 'Buzos con capucha', 20, 2),
 
 -- ALIMENTOS
@@ -28,23 +28,23 @@ INSERT INTO inventario (categoria, descripcion, cantidad, usuario_alta) VALUES
 ('ALIMENTOS', 'Conservas de tomate', 30, 2),
 ('ALIMENTOS', 'Aceite de girasol 900ml', 25, 3),
 ('ALIMENTOS', 'Leche en polvo', 20, 2),
-('ALIMENTOS', 'Azúcar 1kg', 35, 3),
+('ALIMENTOS', 'Azucar 1kg', 35, 3),
 ('ALIMENTOS', 'Galletitas dulces', 60, 2),
 ('ALIMENTOS', 'Yerba mate 500g', 28, 3),
 
 -- JUGUETES
-('JUGUETES', 'Pelotas de fútbol', 10, 2),
-('JUGUETES', 'Muñecas de plástico', 15, 3),
+('JUGUETES', 'Pelotas de futbol', 10, 2),
+('JUGUETES', 'Munecas de plastico', 15, 3),
 ('JUGUETES', 'Autos de juguete', 20, 2),
 ('JUGUETES', 'Rompecabezas infantiles', 12, 3),
 ('JUGUETES', 'Libros de cuentos', 25, 2),
 ('JUGUETES', 'Juegos de mesa', 8, 3),
 ('JUGUETES', 'Peluches varios', 18, 2),
 
--- ÚTILES ESCOLARES
+-- UTILES ESCOLARES
 ('UTILES_ESCOLARES', 'Cuadernos A4 rayados', 100, 2),
-('UTILES_ESCOLARES', 'Lápices de grafito', 150, 3),
-('UTILES_ESCOLARES', 'Lápices de colores (cajas x12)', 45, 2),
+('UTILES_ESCOLARES', 'Lapices de grafito', 150, 3),
+('UTILES_ESCOLARES', 'Lapices de colores (cajas x12)', 45, 2),
 ('UTILES_ESCOLARES', 'Biromes azules', 80, 3),
 ('UTILES_ESCOLARES', 'Gomas de borrar', 60, 2),
 ('UTILES_ESCOLARES', 'Reglas de 20cm', 40, 3),
@@ -91,8 +91,8 @@ INSERT INTO evento_participaciones (evento_id, usuario_id, asignado_por) VALUES
 -- Evento 4: Jardin de Infantes Arcoiris
 INSERT INTO evento_participaciones (evento_id, usuario_id, asignado_por) VALUES
 (4, 5, 5), -- coordinador2 se asigna
-(4, 6, 6), -- voluntario1 se asigna a sí mismo
-(4, 8, 8); -- voluntario3 se asigna a sí mismo
+(4, 6, 6), -- voluntario1 se asigna a si mismo
+(4, 8, 8); -- voluntario3 se asigna a si mismo
 
 -- Evento 5: Hospital Pediatrico
 INSERT INTO evento_participaciones (evento_id, usuario_id, asignado_por) VALUES
@@ -106,14 +106,14 @@ INSERT INTO evento_participaciones (evento_id, usuario_id, asignado_por) VALUES
 INSERT INTO evento_participaciones (evento_id, usuario_id, asignado_por) VALUES
 (6, 5, 5), -- coordinador2 se asigna
 (6, 1, 1), -- presidente se asigna
-(6, 7, 7), -- voluntario2 se asigna a sí mismo
-(6, 8, 7); -- voluntario3 asignado por voluntario2 (esto no debería ser posible según las reglas, pero para pruebas)
+(6, 7, 7), -- voluntario2 se asigna a si mismo
+(6, 8, 7); -- voluntario3 asignado por voluntario2 (esto no deberia ser posible segun las reglas, pero para pruebas)
 
 -- Evento 7: Escuela Tecnica N° 12
 INSERT INTO evento_participaciones (evento_id, usuario_id, asignado_por) VALUES
 (7, 4, 4), -- coordinador1 se asigna
-(7, 6, 6), -- voluntario1 se asigna a sí mismo
-(7, 8, 6); -- voluntario3 asignado por voluntario1 (esto no debería ser posible según las reglas)
+(7, 6, 6), -- voluntario1 se asigna a si mismo
+(7, 8, 6); -- voluntario3 asignado por voluntario1 (esto no deberia ser posible segun las reglas)
 
 -- Evento 8: Hogar de Ninos Santa Maria
 INSERT INTO evento_participaciones (evento_id, usuario_id, asignado_por) VALUES
