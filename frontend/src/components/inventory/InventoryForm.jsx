@@ -67,13 +67,20 @@ const InventoryForm = ({ item, onSave, onCancel, isLoading }) => {
         name="category"
         value={formData.category}
         onChange={handleChange}
-        disabled={isLoading}
+        disabled={isLoading || !!item} // deshabilitar cuando se está editando
       >
         <option value="ROPA">Ropa</option>
         <option value="ALIMENTOS">Alimentos</option>
         <option value="JUGUETES">Juguetes</option>
         <option value="UTILES_ESCOLARES">Útiles Escolares</option>
       </Select>
+
+      {item && (
+        <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
+          <strong>Nota:</strong> No se puede modificar la categoría de un item
+          existente.
+        </div>
+      )}
 
       <Input
         label="Descripción *"

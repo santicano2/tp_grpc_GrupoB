@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Edit, Trash2 } from "lucide-react";
 
 import { useAuth } from "../../contexts/AuthContext";
-import { mockInventory, mockUsers } from "../../data/mockData";
+import apiService from "../../services/apiService";
 
 import Button from "../ui/Button";
 import Modal from "../ui/Modal";
@@ -18,13 +18,20 @@ import InventoryForm from "./InventoryForm";
 
 const InventoryManagement = () => {
   const { user } = useAuth();
-  const [inventory, setInventory] = useState(
-    mockInventory.filter((item) => !item.deleted)
-  );
+  const [inventory, setInventory] = useState([]);
+  const [users, setUsers] = useState([]); // Agregar estado para usuarios
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirmDelete, setShowConfirmDelete] = useState(null);
+  const [error, setError] = useState(null);
+  const [initialLoading, setInitialLoading] = useState(true);
+
+  // cargar inventario y usuarios al montar el componente
+  useEffect(() => {
+    loadInventory();
+    loadUsers();
+  }, []);
 
   // solo presidente y vocal pueden acceder
   if (!user || !["PRESIDENTE", "VOCAL"].includes(user.role)) {
@@ -34,6 +41,30 @@ const InventoryManagement = () => {
       </div>
     );
   }
+
+  const loadInventory = async () => {
+    try {
+      setInitialLoading(true);
+      setError(null);
+      const items = await apiService.getInventoryItems();
+      // filtrar items no eliminados
+      setInventory(items.filter((item) => !item.deleted));
+    } catch (error) {
+      console.error("Error al cargar inventario:", error);
+      setError("Error al cargar el inventario");
+    } finally {
+      setInitialLoading(false);
+    }
+  };
+
+  const loadUsers = async () => {
+    try {
+      const usersList = await apiService.getUsers();
+      setUsers(usersList);
+    } catch (error) {
+      console.error("Error al cargar usuarios:", error);
+    }
+  };
 
   const handleOpenModal = (item) => {
     setEditingItem(item || null);
@@ -47,56 +78,47 @@ const InventoryManagement = () => {
 
   const handleSaveItem = async (itemData) => {
     setIsLoading(true);
+    setError(null);
     try {
       if (editingItem) {
         // actualizar item existente
+        const updatedItem = await apiService.updateInventoryItem(
+          editingItem.id,
+          itemData,
+          user.username
+        );
         setInventory(
           inventory.map((item) =>
-            item.id === editingItem.id
-              ? {
-                  ...item,
-                  ...itemData,
-                  updatedAt: new Date().toISOString(),
-                  updatedBy: user.id,
-                }
-              : item
+            item.id === editingItem.id ? updatedItem : item
           )
         );
       } else {
         // crear nuevo item
-        const newItem = {
-          id: Date.now().toString(),
-          ...itemData,
-          deleted: false,
-          createdAt: new Date().toISOString(),
-          createdBy: user.id,
-        };
+        const newItem = await apiService.createInventoryItem(
+          itemData,
+          user.username
+        );
         setInventory([...inventory, newItem]);
       }
       handleCloseModal();
     } catch (error) {
       console.error("Error al guardar item:", error);
+      setError("Error al guardar el item");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleDeleteItem = (itemId) => {
-    setInventory(
-      inventory
-        .map((item) =>
-          item.id === itemId
-            ? {
-                ...item,
-                deleted: true,
-                updatedAt: new Date().toISOString(),
-                updatedBy: user.id,
-              }
-            : item
-        )
-        .filter((item) => !item.deleted)
-    );
-    setShowConfirmDelete(null);
+  const handleDeleteItem = async (itemId) => {
+    try {
+      await apiService.deleteInventoryItem(itemId, user.username);
+      // remover el item de la lista local
+      setInventory(inventory.filter((item) => item.id !== itemId));
+      setShowConfirmDelete(null);
+    } catch (error) {
+      console.error("Error al eliminar item:", error);
+      setError("Error al eliminar el item");
+    }
   };
 
   const getCategoryBadgeColor = (category) => {
@@ -119,18 +141,58 @@ const InventoryManagement = () => {
     return labels[category];
   };
 
-  const getUserName = (userId) => {
-    const foundUser = mockUsers.find((u) => u.id === userId);
-    return foundUser
-      ? `${foundUser.name} ${foundUser.lastName}`
-      : "Usuario desconocido";
+  const getUserName = (username) => {
+    if (!username) return "Usuario desconocido";
+
+    // buscar el usuario en la lista cargada para obtener nombre completo
+    const foundUser = users.find((u) => u.username === username);
+    if (foundUser) {
+      return `${foundUser.name} ${foundUser.lastname}`;
+    }
+
+    // si no se encuentra, devolver el username
+    return username;
+  };
+
+  const getUpdatedByName = (username) => {
+    if (!username) return "-";
+
+    // buscar el usuario en la lista cargada para obtener nombre completo
+    const foundUser = users.find((u) => u.username === username);
+    if (foundUser) {
+      return `${foundUser.name} ${foundUser.lastname}`;
+    }
+
+    // si no se encuentra, devolver el username
+    return username;
   };
 
   const totalItems = inventory.reduce((sum, item) => sum + item.quantity, 0);
   const lowStockItems = inventory.filter((item) => item.quantity < 10).length;
 
+  // Mostrar loading inicial
+  if (initialLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-gray-600">Cargando inventario...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+          {error}
+          <button
+            onClick={loadInventory}
+            className="ml-2 text-red-800 underline hover:no-underline"
+          >
+            Reintentar
+          </button>
+        </div>
+      )}
+
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
@@ -221,7 +283,7 @@ const InventoryManagement = () => {
                     <div className="text-sm text-gray-600">
                       {new Date(item.updatedAt).toLocaleDateString("es-ES")}
                       <div className="text-xs text-gray-500">
-                        por {getUserName(item.updatedBy)}
+                        por {getUpdatedByName(item.updatedBy)}
                       </div>
                     </div>
                   ) : (
