@@ -215,9 +215,8 @@ class DonacionesService(inventory_pb2_grpc.DonacionesServiceServicer):
         
         try:
             # Verificar que la donación existe y no está eliminada
-            check_query = "SELECT * FROM inventario WHERE id = %s AND eliminado = 0"
-            results = db.db.execute_query(check_query, (request.id,))
-            if not results:
+            donations = db.donations
+            if request.id not in donations or donations[request.id].deleted:
                 context.abort(grpc.StatusCode.NOT_FOUND, "Donación inexistente")
             
             if request.quantity < 0:
@@ -239,26 +238,27 @@ class DonacionesService(inventory_pb2_grpc.DonacionesServiceServicer):
                 
                 # Agregar auditoría
                 update_fields.append("usuario_modificacion = %s")
+                update_fields.append("fecha_modificacion = NOW()")
                 params.append(actor.id)
                 params.append(request.id)
                 
                 update_query = f"UPDATE inventario SET {', '.join(update_fields)} WHERE id = %s"
                 db.db.execute_update(update_query, tuple(params))
             
-            # Obtener donación actualizada
-            updated_results = db.db.execute_query(check_query, (request.id,))
-            row = updated_results[0]
+            # Obtener donación actualizada usando el sistema de almacenamiento
+            updated_donations = db.donations
+            updated_donation = updated_donations[request.id]
             
             return inventory_pb2.DonationItem(
-                id=row['id'], 
-                category=inventory_pb2.Category.Value(row['categoria']),
-                description=row['descripcion'] or "", 
-                quantity=row['cantidad'], 
-                deleted=row['eliminado'],
-                created_at=row['fecha_alta'].isoformat() if row['fecha_alta'] else "",
-                created_by=actor.username,  # Simplificado
-                updated_at=row['fecha_modificacion'].isoformat() if row['fecha_modificacion'] else "",
-                updated_by=actor.username
+                id=updated_donation.id, 
+                category=inventory_pb2.Category.Value(updated_donation.category),
+                description=updated_donation.description, 
+                quantity=updated_donation.quantity, 
+                deleted=updated_donation.deleted,
+                created_at=updated_donation.created_at,
+                created_by=updated_donation.created_by,
+                updated_at=updated_donation.updated_at or "",
+                updated_by=updated_donation.updated_by or ""
             )
             
         except Exception as e:
@@ -271,29 +271,28 @@ class DonacionesService(inventory_pb2_grpc.DonacionesServiceServicer):
         
         try:
             # Verificar que la donación existe y no está eliminada
-            check_query = "SELECT * FROM inventario WHERE id = %s AND eliminado = 0"
-            results = db.db.execute_query(check_query, (request.id,))
-            if not results:
+            donations = db.donations
+            if request.id not in donations or donations[request.id].deleted:
                 context.abort(grpc.StatusCode.NOT_FOUND, "Donación inexistente")
             
-            # Eliminar
-            delete_query = "UPDATE inventario SET eliminado = 1, usuario_modificacion = %s WHERE id = %s"
+            # Actualizar en base de datos
+            delete_query = "UPDATE inventario SET eliminado = 1, usuario_modificacion = %s, fecha_modificacion = NOW() WHERE id = %s"
             db.db.execute_update(delete_query, (actor.id, request.id))
             
-            # Obtener donación actualizada
-            updated_results = db.db.execute_query("SELECT * FROM inventario WHERE id = %s", (request.id,))
-            row = updated_results[0]
+            # Obtener la donación actualizada usando el sistema de almacenamiento
+            updated_donations = db.donations
+            updated_donation = updated_donations[request.id]
             
             return inventory_pb2.DonationItem(
-                id=row['id'], 
-                category=inventory_pb2.Category.Value(row['categoria']),
-                description=row['descripcion'] or "", 
-                quantity=row['cantidad'], 
-                deleted=row['eliminado'],
-                created_at=row['fecha_alta'].isoformat() if row['fecha_alta'] else "",
-                created_by=actor.username,  # Simplificado
-                updated_at=row['fecha_modificacion'].isoformat() if row['fecha_modificacion'] else "",
-                updated_by=actor.username
+                id=updated_donation.id, 
+                category=inventory_pb2.Category.Value(updated_donation.category),
+                description=updated_donation.description, 
+                quantity=updated_donation.quantity, 
+                deleted=updated_donation.deleted,
+                created_at=updated_donation.created_at,
+                created_by=updated_donation.created_by,
+                updated_at=updated_donation.updated_at or "",
+                updated_by=updated_donation.updated_by or ""
             )
             
         except Exception as e:
