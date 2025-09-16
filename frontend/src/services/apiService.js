@@ -23,6 +23,14 @@ class ApiService {
         throw new Error(`HTTP error status: ${response.status}`);
       }
 
+      // si la respuesta no tiene contenido (204), devolver null
+      if (
+        response.status === 204 ||
+        !response.headers.get("content-type")?.includes("application/json")
+      ) {
+        return null;
+      }
+
       const data = await response.json();
       return data;
     } catch (error) {
@@ -185,6 +193,75 @@ class ApiService {
       method: "POST",
       body: formData,
     });
+  }
+
+  // ======== INVENTARIO/DONACIONES ========
+
+  /**
+   * Listar todos los items del inventario
+   * @returns {Promise<Array>} Lista de items del inventario
+   */
+  async getInventoryItems() {
+    return this.request("/donaciones/listar");
+  }
+
+  /**
+   * Crear nuevo item de inventario
+   * @param {Object} itemData - Datos del item
+   * @param {string} actor - Usuario que realiza la acción
+   * @returns {Promise<Object>} Item creado
+   */
+  async createInventoryItem(itemData, actor) {
+    const formData = this.createFormData({
+      actor,
+      categoria: itemData.category,
+      descripcion: itemData.description,
+      cantidad: itemData.quantity,
+    });
+
+    return this.request("/donaciones/crear", {
+      method: "POST",
+      body: formData,
+    });
+  }
+
+  /**
+   * Modificar item de inventario existente
+   * @param {number} id - ID del item
+   * @param {Object} itemData - Datos del item
+   * @param {string} actor - Usuario que realiza la acción
+   * @returns {Promise<Object>} Item modificado
+   */
+  async updateInventoryItem(id, itemData, actor) {
+    return this.request(
+      `/donaciones/modificar/${id}?actor=${encodeURIComponent(actor)}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id,
+          description: itemData.description,
+          quantity: itemData.quantity,
+        }),
+      }
+    );
+  }
+
+  /**
+   * Eliminar item de inventario
+   * @param {number} id - ID del item
+   * @param {string} actor - Usuario que realiza la acción
+   * @returns {Promise<void>}
+   */
+  async deleteInventoryItem(id, actor) {
+    return this.request(
+      `/donaciones/eliminar/${id}?actor=${encodeURIComponent(actor)}`,
+      {
+        method: "DELETE",
+      }
+    );
   }
 
   // ======== DASHBOARD ========
