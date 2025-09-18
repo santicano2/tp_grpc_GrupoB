@@ -37,7 +37,7 @@ class UsuariosService(users_pb2_grpc.UsuariosServiceServicer):
             lastname=request.lastname,
             phone=request.phone or "",
             email=request.email,
-            role=users_pb2.Role.Name(request.role),
+            role=users_pb2.Role.Value(request.role),
             active=True,
             pw_hash=pw_hash,
             pw_salt="",  # bcrypt no usa salt separado
@@ -62,60 +62,63 @@ class UsuariosService(users_pb2_grpc.UsuariosServiceServicer):
         if not actor or not can_manage_users(actor.role):
             context.abort(grpc.StatusCode.PERMISSION_DENIED, "No autorizado")
         
-        # Obtener usuario actual de la base de datos
         try:
+            # Verificar que el usuario existe
             query = "SELECT * FROM usuarios WHERE id = %s"
             results = db.db.execute_query(query, (request.id,))
             if not results:
                 context.abort(grpc.StatusCode.NOT_FOUND, "Usuario inexistente")
             
-            # Construir datos de actualización
+            # Construir datos a actualizar
             update_data = {}
-            if request.username:
+            if request.HasField("username"):
                 update_data['nombre_usuario'] = request.username
-            if request.name:
+            if request.HasField("name"):
                 update_data['nombre'] = request.name
-            if request.lastname:
+            if request.HasField("lastname"):
                 update_data['apellido'] = request.lastname
-            if request.phone:
+            if request.HasField("phone"):
                 update_data['telefono'] = request.phone
-            if request.email:
+            if request.HasField("email"):
                 update_data['email'] = request.email
-            if request.role is not None:
-                update_data['rol'] = users_pb2.Role.Name(request.role)
-            if hasattr(request, 'active') and request.active is not None:
+            if request.HasField("role"):
+                update_data['rol'] = int(request.role)
+            if request.HasField("active"):
                 update_data['activo'] = request.active
+
             
-            # Actualizar en base de datos
+            # Ejecutar UPDATE si hay cambios
             if update_data:
                 update_fields = []
                 params = []
                 for field, value in update_data.items():
                     update_fields.append(f"{field} = %s")
                     params.append(value)
-                
                 params.append(request.id)
+                
                 update_query = f"UPDATE usuarios SET {', '.join(update_fields)} WHERE id = %s"
                 db.db.execute_update(update_query, tuple(params))
-            
+                db.db.commit()  
+                
             # Obtener usuario actualizado
             db._clear_user_cache()
             updated_results = db.db.execute_query(query, (request.id,))
             row = updated_results[0]
             
             return users_pb2.User(
-                id=row['id'], 
-                username=row['nombre_usuario'], 
-                name=row['nombre'], 
+                id=row['id'],
+                username=row['nombre_usuario'],
+                name=row['nombre'],
                 lastname=row['apellido'],
-                phone=row['telefono'] or "", 
-                email=row['email'], 
-                role=users_pb2.Role.Value(row['rol']), 
+                phone=row['telefono'] or "",
+                email=row['email'],
+                role=users_pb2.Role.Value(row['rol']),
                 active=row['activo']
             )
             
         except Exception as e:
             context.abort(grpc.StatusCode.INTERNAL, f"Error al actualizar usuario: {str(e)}")
+
 
     def DeactivateUser(self, request, context):
         actor = require_user(request.actor_username)
@@ -123,9 +126,16 @@ class UsuariosService(users_pb2_grpc.UsuariosServiceServicer):
             context.abort(grpc.StatusCode.PERMISSION_DENIED, "No autorizado")
         
         try:
+            # Obtener el ID del usuario a partir del username
+            get_id_query = "SELECT id FROM usuarios WHERE nombre_usuario = %s"
+            result = db.db.execute_query(get_id_query, (request.username,))
+            if not result:
+                context.abort(grpc.StatusCode.NOT_FOUND, "Usuario inexistente")
+            user_id = result[0]['id']
+        
             # Desactivar usuario
             query = "UPDATE usuarios SET activo = 0 WHERE id = %s"
-            rows_affected = db.db.execute_update(query, (request.id,))
+            rows_affected = db.db.execute_update(query, (user_id,))
             
             if rows_affected == 0:
                 context.abort(grpc.StatusCode.NOT_FOUND, "Usuario inexistente")
@@ -136,12 +146,12 @@ class UsuariosService(users_pb2_grpc.UsuariosServiceServicer):
                 WHERE usuario_id = %s 
                 AND evento_id IN (SELECT id FROM eventos WHERE fecha_evento > NOW())
             """
-            db.db.execute_update(remove_query, (request.id,))
+            db.db.execute_update(remove_query, (user_id,))
             
             # Obtener usuario actualizado
             db._clear_user_cache()
             user_query = "SELECT * FROM usuarios WHERE id = %s"
-            results = db.db.execute_query(user_query, (request.id,))
+            results = db.db.execute_query(user_query, (user_id,))
             row = results[0]
             
             return users_pb2.User(
@@ -151,7 +161,7 @@ class UsuariosService(users_pb2_grpc.UsuariosServiceServicer):
                 lastname=row['apellido'],
                 phone=row['telefono'] or "", 
                 email=row['email'], 
-                role=users_pb2.Role.Value(row['rol']), 
+                role=users_pb2.Role(row['rol']), 
                 active=row['activo']
             )
             
@@ -160,10 +170,18 @@ class UsuariosService(users_pb2_grpc.UsuariosServiceServicer):
 
     def ListUsers(self, request, context):
         users = []
-        for u in db.users.values():
+        query = "SELECT * FROM usuarios"
+        results = db.db.execute_query(query)
+        for row in results:
             users.append(users_pb2.User(
-                id=u.id, username=u.username, name=u.name, lastname=u.lastname,
-                phone=u.phone, email=u.email, role=users_pb2.Role.Value(u.role), active=u.active
+                id=row['id'],
+                username=row['nombre_usuario'],
+                name=row['nombre'],
+                lastname=row['apellido'],
+                phone=row['telefono'] or "",
+                email=row['email'],
+                role=users_pb2.Role.Value(row['rol']),
+                active=row['activo']
             ))
         return users_pb2.UserList(users=users)
 
