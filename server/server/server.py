@@ -2,6 +2,7 @@ import grpc
 from concurrent import futures
 from datetime import datetime, timezone
 import secrets
+import logging
 
 from .auth import (
     can_manage_users, can_manage_inventory, can_manage_events, can_participate_events
@@ -11,6 +12,7 @@ from .storage import db, User as UserModel, Donation as DonationModel, Event as 
 from . import users_pb2, users_pb2_grpc
 from . import inventory_pb2, inventory_pb2_grpc
 from . import events_pb2, events_pb2_grpc
+from google.protobuf.empty_pb2 import Empty
 
 # Helpers
 def require_user(actor_username: str) -> UserModel | None:
@@ -30,6 +32,18 @@ class UsuariosService(users_pb2_grpc.UsuariosServiceServicer):
         # generar clave random y hashear con bcrypt
         plain = secrets.token_urlsafe(10)
         pw_hash = hash_password_bcrypt(plain)  # usar bcrypt
+        
+        # convertir role a int (aceptar tanto numeric como string)
+        try:
+            # si request.role es int o convertible a int
+            role_int = int(request.role)
+        except Exception:
+            try:
+                # si request.role es string con nombre del enum
+                role_int = users_pb2.Role.Value(request.role)
+            except Exception as e:
+                context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Rol inválido: {str(e)}")
+
         u = UserModel(
             id=0,
             username=request.username,
@@ -37,7 +51,7 @@ class UsuariosService(users_pb2_grpc.UsuariosServiceServicer):
             lastname=request.lastname,
             phone=request.phone or "",
             email=request.email,
-            role=users_pb2.Role.Value(request.role),
+            role=role_int,
             active=True,
             pw_hash=pw_hash,
             pw_salt="",  # bcrypt no usa salt separado
@@ -48,11 +62,12 @@ class UsuariosService(users_pb2_grpc.UsuariosServiceServicer):
             context.abort(grpc.StatusCode.ALREADY_EXISTS, str(e))
         # Simular envío de email
         print(f"[EMAIL] Enviando clave a {created.email}: {plain}")
+        
         return users_pb2.CreateUserResponse(
             user=users_pb2.User(
                 id=created.id, username=created.username, name=created.name,
                 lastname=created.lastname, phone=created.phone, email=created.email,
-                role=request.role, active=created.active
+                role=int(created.role), active=created.active
             ),
             plain_password=plain
         )
@@ -68,24 +83,24 @@ class UsuariosService(users_pb2_grpc.UsuariosServiceServicer):
             results = db.db.execute_query(query, (request.id,))
             if not results:
                 context.abort(grpc.StatusCode.NOT_FOUND, "Usuario inexistente")
+            current_row = results[0]
             
             # Construir datos a actualizar
             update_data = {}
-            if request.HasField("username"):
+            if getattr(request, "username", ""):
                 update_data['nombre_usuario'] = request.username
-            if request.HasField("name"):
+            if getattr(request, "name", ""):
                 update_data['nombre'] = request.name
-            if request.HasField("lastname"):
+            if getattr(request, "lastname", ""):
                 update_data['apellido'] = request.lastname
-            if request.HasField("phone"):
+            if getattr(request, "phone", ""):
                 update_data['telefono'] = request.phone
-            if request.HasField("email"):
+            if getattr(request, "email", ""):
                 update_data['email'] = request.email
-            if request.HasField("role"):
+            if hasattr(request, "role"):
                 update_data['rol'] = int(request.role)
-            if request.HasField("active"):
-                update_data['activo'] = request.active
-
+            if hasattr(request, "active"):
+                update_data['activo'] = bool(request.active)
             
             # Ejecutar UPDATE si hay cambios
             if update_data:
@@ -98,22 +113,26 @@ class UsuariosService(users_pb2_grpc.UsuariosServiceServicer):
                 
                 update_query = f"UPDATE usuarios SET {', '.join(update_fields)} WHERE id = %s"
                 db.db.execute_update(update_query, tuple(params))
-                db.db.commit()  
+                db.db.commit() 
                 
             # Obtener usuario actualizado
-            db._clear_user_cache()
-            updated_results = db.db.execute_query(query, (request.id,))
-            row = updated_results[0]
-            
+            if update_data:
+                    set_clause = ", ".join([f"{k} = %s" for k in update_data.keys()])
+                    params = list(update_data.values()) + [request.id]
+                    db.db.execute_update(f"UPDATE usuarios SET {set_clause} WHERE id = %s", tuple(params))
+                    db.db.commit()
+
+                # Devolver usuario actualizado
+            updated = db.db.execute_query(user_query, (request.id,))[0]
             return users_pb2.User(
-                id=row['id'],
-                username=row['nombre_usuario'],
-                name=row['nombre'],
-                lastname=row['apellido'],
-                phone=row['telefono'] or "",
-                email=row['email'],
-                role=users_pb2.Role.Value(row['rol']),
-                active=row['activo']
+                id=updated['id'],
+                username=updated['nombre_usuario'],
+                name=updated['nombre'],
+                lastname=updated['apellido'],
+                phone=updated['telefono'] or "",
+                email=updated['email'],
+                role=int(updated['rol']),
+                active=bool(updated['activo'])
             )
             
         except Exception as e:
@@ -126,19 +145,17 @@ class UsuariosService(users_pb2_grpc.UsuariosServiceServicer):
             context.abort(grpc.StatusCode.PERMISSION_DENIED, "No autorizado")
         
         try:
-            # Obtener el ID del usuario a partir del username
-            get_id_query = "SELECT id FROM usuarios WHERE nombre_usuario = %s"
-            result = db.db.execute_query(get_id_query, (request.username,))
-            if not result:
+            # Obtener usuario destino ignorando mayúsculas
+            query = "SELECT * FROM usuarios WHERE LOWER(nombre_usuario) = LOWER(%s)"
+            results = db.db.execute_query(query, (request.username,))
+            if not results:
                 context.abort(grpc.StatusCode.NOT_FOUND, "Usuario inexistente")
-            user_id = result[0]['id']
+            user_row = results[0]
+            user_id = user_row['id']
         
             # Desactivar usuario
-            query = "UPDATE usuarios SET activo = 0 WHERE id = %s"
-            rows_affected = db.db.execute_update(query, (user_id,))
-            
-            if rows_affected == 0:
-                context.abort(grpc.StatusCode.NOT_FOUND, "Usuario inexistente")
+            db.db.execute_update("UPDATE usuarios SET activo = 0 WHERE id = %s", (user_id,))
+            db.db.commit()
             
             # Remover de eventos futuros
             remove_query = """
@@ -147,24 +164,20 @@ class UsuariosService(users_pb2_grpc.UsuariosServiceServicer):
                 AND evento_id IN (SELECT id FROM eventos WHERE fecha_evento > NOW())
             """
             db.db.execute_update(remove_query, (user_id,))
+            db.db.commit()
             
-            # Obtener usuario actualizado
-            db._clear_user_cache()
-            user_query = "SELECT * FROM usuarios WHERE id = %s"
-            results = db.db.execute_query(user_query, (user_id,))
-            row = results[0]
-            
+            updated = db.db.execute_query("SELECT * FROM usuarios WHERE id = %s", (user_id,))[0]
             return users_pb2.User(
-                id=row['id'], 
-                username=row['nombre_usuario'], 
-                name=row['nombre'], 
-                lastname=row['apellido'],
-                phone=row['telefono'] or "", 
-                email=row['email'], 
-                role=users_pb2.Role(row['rol']), 
-                active=row['activo']
+                id=updated['id'],
+                username=updated['nombre_usuario'],
+                name=updated['nombre'],
+                lastname=updated['apellido'],
+                phone=updated['telefono'] or "",
+                email=updated['email'],
+                role=int(updated['rol']),
+                active=bool(updated['activo'])
             )
-            
+                
         except Exception as e:
             context.abort(grpc.StatusCode.INTERNAL, f"Error al desactivar usuario: {str(e)}")
 
@@ -233,19 +246,23 @@ class DonacionesService(inventory_pb2_grpc.DonacionesServiceServicer):
         
         try:
             # Verificar que la donación existe y no está eliminada
-            donations = db.donations
-            if request.id not in donations or donations[request.id].deleted:
+            select_query = "SELECT * FROM inventario WHERE id = %s"
+            results = db.db.execute_query(select_query, (request.id,))
+            if not results:
                 context.abort(grpc.StatusCode.NOT_FOUND, "Donación inexistente")
-            
-            if request.quantity < 0:
+            row = results[0]
+            if row.get('eliminado'):
+                context.abort(grpc.StatusCode.NOT_FOUND, "Donación inexistente")
+
+            if request.quantity is not None and request.quantity < 0:
                 context.abort(grpc.StatusCode.INVALID_ARGUMENT, "Cantidad no puede ser negativa")
-            
+
             # Actualizar donación
             update_data = {}
-            if request.description is not None:
+            if request.description is not None and request.description != row.get('descripcion'):
                 update_data['descripcion'] = request.description
-            if request.quantity is not None:
-                update_data['cantidad'] = request.quantity
+            if request.quantity is not None and int(request.quantity) != int(row.get('cantidad') or 0):
+                update_data['cantidad'] = int(request.quantity)
             
             if update_data:
                 update_fields = []
@@ -262,7 +279,8 @@ class DonacionesService(inventory_pb2_grpc.DonacionesServiceServicer):
                 
                 update_query = f"UPDATE inventario SET {', '.join(update_fields)} WHERE id = %s"
                 db.db.execute_update(update_query, tuple(params))
-            
+                db.db.commit()
+
             # Obtener donación actualizada usando el sistema de almacenamiento
             updated_donations = db.donations
             updated_donation = updated_donations[request.id]
@@ -288,14 +306,17 @@ class DonacionesService(inventory_pb2_grpc.DonacionesServiceServicer):
             context.abort(grpc.StatusCode.PERMISSION_DENIED, "No autorizado")
         
         try:
-            # Verificar que la donación existe y no está eliminada
-            donations = db.donations
-            if request.id not in donations or donations[request.id].deleted:
+            select_query = "SELECT * FROM inventario WHERE id = %s"
+            results = db.db.execute_query(select_query, (request.id,))
+            if not results:
                 context.abort(grpc.StatusCode.NOT_FOUND, "Donación inexistente")
-            
-            # Actualizar en base de datos
+            row = results[0]
+            if row.get('eliminado'):
+                context.abort(grpc.StatusCode.NOT_FOUND, "Donación inexistente")
+
             delete_query = "UPDATE inventario SET eliminado = 1, usuario_modificacion = %s, fecha_modificacion = NOW() WHERE id = %s"
             db.db.execute_update(delete_query, (actor.id, request.id))
+            db.db.commit()
             
             # Obtener la donación actualizada usando el sistema de almacenamiento
             updated_donations = db.donations
@@ -362,11 +383,15 @@ class EventosService(events_pb2_grpc.EventosServiceServicer):
             if request.description:
                 update_data['descripcion'] = request.description
             if request.when_iso:
-                new_when = datetime.fromisoformat(request.when_iso.replace('Z', '+00:00'))
-                # si la fecha no tiene zona horaria, asumir UTC
-                if new_when.tzinfo is None:
-                    new_when = new_when.replace(tzinfo=timezone.utc)
-                update_data['fecha_evento'] = new_when
+                try:
+                    s2 = request.when_iso.replace("Z", "+00:00")
+                    new_when = datetime.fromisoformat(s2)
+                    if new_when.tzinfo is None:
+                        new_when = new_when.replace(tzinfo=timezone.utc)
+                    update_data['fecha_evento'] = new_when
+                except Exception as e:
+                    context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Fecha inválida: {str(e)}")
+
             
             if update_data:
                 update_fields = []
@@ -382,7 +407,8 @@ class EventosService(events_pb2_grpc.EventosServiceServicer):
                 
                 update_query = f"UPDATE eventos SET {', '.join(update_fields)} WHERE id = %s"
                 db.db.execute_update(update_query, tuple(params))
-            
+                db.db.commit()           
+                
             # Obtener evento actualizado con participantes
             updated_results = db.db.execute_query(check_query, (request.id,))
             event_row = updated_results[0]
@@ -432,8 +458,15 @@ class EventosService(events_pb2_grpc.EventosServiceServicer):
             # Eliminar evento
             delete_event = "DELETE FROM eventos WHERE id = %s"
             db.db.execute_update(delete_event, (request.id,))
+            db.db.commit()
             
-            return events_pb2.google_dot_protobuf_dot_empty__pb2.Empty()
+            if hasattr(db, "_reload_events_cache"):
+                try:
+                    db._reload_events_cache()
+                except Exception:
+                    logger.debug("No se pudo recargar cache de eventos")
+                    
+            return Empty
             
         except Exception as e:
             context.abort(grpc.StatusCode.INTERNAL, f"Error al eliminar evento: {str(e)}")
