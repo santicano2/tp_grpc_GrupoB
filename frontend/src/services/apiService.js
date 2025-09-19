@@ -8,10 +8,10 @@ class ApiService {
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
 
+    // <-- Cambié esta parte para no fijar siempre content-type -->
     const config = {
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        ...options.headers,
+        ...options.headers, // ahora el método decide el content-type
       },
       ...options,
     };
@@ -117,10 +117,10 @@ class ApiService {
    * @returns {Promise<void>}
    */
 
-  async deactivateUser(username, actor) {
+  async deactivateUser(id, actor) {
     return this.request(
       `/usuarios/baja/${encodeURIComponent(
-        username
+        id
       )}?actor=${encodeURIComponent(actor)}`,
       {
         method: "DELETE",

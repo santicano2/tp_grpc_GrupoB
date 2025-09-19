@@ -16,7 +16,7 @@ export const useAuth = () => {
 // manejar localStorage
 const saveUserToStorage = (userData) => {
   try {
-    localStorage.setItem("user", JSON.stringify(userData));
+    sessionStorage.setItem("user", JSON.stringify(userData));
   } catch (error) {
     console.error("Error guardando usuario en localStorage:", error);
   }

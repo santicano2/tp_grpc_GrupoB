@@ -2,6 +2,7 @@ package com.example.api.controller;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -94,15 +95,20 @@ public class UsuarioController {
         }
     }
 
-    @DeleteMapping("/baja/{username}")
-    public ResponseEntity<Void> darDeBaja(@PathVariable String username,  @RequestParam String actor) {
+    @DeleteMapping("/baja/{id}")
+    public ResponseEntity<?> darDeBaja(@PathVariable int id, @RequestParam String actor) {
         try {
-            usuarioClientService.bajaUsuario(username, actor);
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            Users.User user = usuarioClientService.bajaUsuario(id, actor);
+            return ResponseEntity.ok(Map.of(
+                "message", "Usuario dado de baja correctamente",
+                "user", mapToDTO(user)
+            ));
+        } catch (io.grpc.StatusRuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", e.getStatus().getDescription()));
         }
     }
+
 
     private UserDTO mapToDTO(Users.User user) {
         UserDTO dto = new UserDTO();

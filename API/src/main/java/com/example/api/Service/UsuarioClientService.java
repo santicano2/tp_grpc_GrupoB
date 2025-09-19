@@ -59,12 +59,12 @@ public class UsuarioClientService {
         return stub.updateUser(request);
     }
 
-    public void bajaUsuario(String username, String actor) {
+    public Users.User bajaUsuario(int id, String actor) {
         Users.DeactivateUserRequest request = Users.DeactivateUserRequest.newBuilder()
             .setActorUsername(actor)
-            .setUsername(username)
+            .setId(id)
             .build();
-        stub.deactivateUser(request);
+        return stub.deactivateUser(request);
     }
 
     public Users.UserList listarUsuarios() {

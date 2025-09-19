@@ -76,97 +76,65 @@ class UsuariosService(users_pb2_grpc.UsuariosServiceServicer):
         actor = require_user(request.actor_username)
         if not actor or not can_manage_users(actor.role):
             context.abort(grpc.StatusCode.PERMISSION_DENIED, "No autorizado")
-        
-        try:
-            # Verificar que el usuario existe
-            query = "SELECT * FROM usuarios WHERE id = %s"
-            results = db.db.execute_query(query, (request.id,))
-            if not results:
-                context.abort(grpc.StatusCode.NOT_FOUND, "Usuario inexistente")
-            current_row = results[0]
-            
-            # Construir datos a actualizar
-            update_data = {}
-            if getattr(request, "username", ""):
-                update_data['nombre_usuario'] = request.username
-            if getattr(request, "name", ""):
-                update_data['nombre'] = request.name
-            if getattr(request, "lastname", ""):
-                update_data['apellido'] = request.lastname
-            if getattr(request, "phone", ""):
-                update_data['telefono'] = request.phone
-            if getattr(request, "email", ""):
-                update_data['email'] = request.email
-            if hasattr(request, "role"):
-                update_data['rol'] = int(request.role)
-            if hasattr(request, "active"):
-                update_data['activo'] = bool(request.active)
-            
-            # Ejecutar UPDATE si hay cambios
-            if update_data:
-                update_fields = []
-                params = []
-                for field, value in update_data.items():
-                    update_fields.append(f"{field} = %s")
-                    params.append(value)
-                params.append(request.id)
-                
-                update_query = f"UPDATE usuarios SET {', '.join(update_fields)} WHERE id = %s"
-                db.db.execute_update(update_query, tuple(params))
-                db.db.commit() 
-                
-            # Obtener usuario actualizado
-            if update_data:
-                    set_clause = ", ".join([f"{k} = %s" for k in update_data.keys()])
-                    params = list(update_data.values()) + [request.id]
-                    db.db.execute_update(f"UPDATE usuarios SET {set_clause} WHERE id = %s", tuple(params))
-                    db.db.commit()
 
-                # Devolver usuario actualizado
-            updated = db.db.execute_query(user_query, (request.id,))[0]
-            return users_pb2.User(
-                id=updated['id'],
-                username=updated['nombre_usuario'],
-                name=updated['nombre'],
-                lastname=updated['apellido'],
-                phone=updated['telefono'] or "",
-                email=updated['email'],
-                role=int(updated['rol']),
-                active=bool(updated['activo'])
-            )
-            
-        except Exception as e:
-            context.abort(grpc.StatusCode.INTERNAL, f"Error al actualizar usuario: {str(e)}")
+        # Validar ID
+        results = db.db.execute_query("SELECT * FROM usuarios WHERE id = %s", (request.id,))
+        if not results:
+            context.abort(grpc.StatusCode.NOT_FOUND, "Usuario inexistente")
+        row = results[0]
+
+        update_data = {}
+        if request.username: update_data['nombre_usuario'] = request.username
+        if request.name: update_data['nombre'] = request.name
+        if request.lastname: update_data['apellido'] = request.lastname
+        if request.phone: update_data['telefono'] = request.phone
+        if request.email: update_data['email'] = request.email
+        if request.HasField('role'): update_data['rol'] = int(request.role)
+        if request.HasField('active'): update_data['activo'] = bool(request.active)
+
+        if update_data:
+            set_clause = ", ".join([f"{k} = %s" for k in update_data.keys()])
+            params = list(update_data.values()) + [request.id]
+            db.db.execute_update(f"UPDATE usuarios SET {set_clause} WHERE id = %s", tuple(params))
+            db.db.commit()
+
+        # devolver usuario actualizado
+        updated_row = db.db.execute_query("SELECT * FROM usuarios WHERE id = %s", (request.id,))[0]
+        return users_pb2.User(
+            id=updated_row['id'],
+            username=updated_row['nombre_usuario'],
+            name=updated_row['nombre'],
+            lastname=updated_row['apellido'],
+            phone=updated_row['telefono'] or "",
+            email=updated_row['email'],
+            role=int(updated_row['rol']),
+            active=bool(updated_row['activo'])
+        )
 
 
     def DeactivateUser(self, request, context):
         actor = require_user(request.actor_username)
         if not actor or not can_manage_users(actor.role):
             context.abort(grpc.StatusCode.PERMISSION_DENIED, "No autorizado")
-        
+
         try:
-            # Obtener usuario destino ignorando mayúsculas
-            query = "SELECT * FROM usuarios WHERE LOWER(nombre_usuario) = LOWER(%s)"
-            results = db.db.execute_query(query, (request.username,))
+            results = db.db.execute_query("SELECT * FROM usuarios WHERE id = %s", (request.id,))
             if not results:
                 context.abort(grpc.StatusCode.NOT_FOUND, "Usuario inexistente")
             user_row = results[0]
-            user_id = user_row['id']
-        
-            # Desactivar usuario
-            db.db.execute_update("UPDATE usuarios SET activo = 0 WHERE id = %s", (user_id,))
+
+            db.db.execute_update("UPDATE usuarios SET activo = 0 WHERE id = %s", (request.id,))
             db.db.commit()
-            
-            # Remover de eventos futuros
+
             remove_query = """
                 DELETE FROM evento_participaciones 
                 WHERE usuario_id = %s 
                 AND evento_id IN (SELECT id FROM eventos WHERE fecha_evento > NOW())
             """
-            db.db.execute_update(remove_query, (user_id,))
+            db.db.execute_update(remove_query, (request.id,))
             db.db.commit()
-            
-            updated = db.db.execute_query("SELECT * FROM usuarios WHERE id = %s", (user_id,))[0]
+
+            updated = db.db.execute_query("SELECT * FROM usuarios WHERE id = %s", (request.id,))[0]
             return users_pb2.User(
                 id=updated['id'],
                 username=updated['nombre_usuario'],
@@ -177,7 +145,7 @@ class UsuariosService(users_pb2_grpc.UsuariosServiceServicer):
                 role=int(updated['rol']),
                 active=bool(updated['activo'])
             )
-                
+
         except Exception as e:
             context.abort(grpc.StatusCode.INTERNAL, f"Error al desactivar usuario: {str(e)}")
 

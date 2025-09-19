@@ -60,7 +60,7 @@ message GetUserResponse {
 
 message DeactivateUserRequest {
  string actor_username = 1; // quien ejecuta
- string username = 2;
+  int32 id = 2;
 }
 
 message UserList { repeated User users = 1; }
