@@ -288,19 +288,27 @@ class DonacionesService(inventory_pb2_grpc.DonacionesServiceServicer):
                 update_fields.append("usuario_modificacion = %s")
                 update_fields.append("fecha_modificacion = NOW()")
                 params.append(actor.id)
+                
+                # El parámetro para el WHERE va al final
                 params.append(request.id)
                 
                 update_query = f"UPDATE inventario SET {', '.join(update_fields)} WHERE id = %s"
                 db.db.execute_update(update_query, tuple(params))
-                db.db.commit()
 
             # Obtener donación actualizada usando el sistema de almacenamiento
             updated_donations = db.donations
             updated_donation = updated_donations[request.id]
             
+            # convertir la categoría string al enum correcto
+            try:
+                category_enum = inventory_pb2.Category.Value(updated_donation.category)
+            except ValueError:
+                # si falla la conversión, usar el valor por defecto
+                category_enum = inventory_pb2.Category.ROPA
+            
             return inventory_pb2.DonationItem(
                 id=updated_donation.id, 
-                category=inventory_pb2.Category.Value(updated_donation.category),
+                category=category_enum,
                 description=updated_donation.description, 
                 quantity=updated_donation.quantity, 
                 deleted=updated_donation.deleted,
@@ -329,15 +337,21 @@ class DonacionesService(inventory_pb2_grpc.DonacionesServiceServicer):
 
             delete_query = "UPDATE inventario SET eliminado = 1, usuario_modificacion = %s, fecha_modificacion = NOW() WHERE id = %s"
             db.db.execute_update(delete_query, (actor.id, request.id))
-            db.db.commit()
             
             # Obtener la donación actualizada usando el sistema de almacenamiento
             updated_donations = db.donations
             updated_donation = updated_donations[request.id]
             
+            # convertir la categoría string al enum correcto
+            try:
+                category_enum = inventory_pb2.Category.Value(updated_donation.category)
+            except ValueError:
+                # si falla la conversión, usar el valor por defecto
+                category_enum = inventory_pb2.Category.ROPA
+            
             return inventory_pb2.DonationItem(
                 id=updated_donation.id, 
-                category=inventory_pb2.Category.Value(updated_donation.category),
+                category=category_enum,
                 description=updated_donation.description, 
                 quantity=updated_donation.quantity, 
                 deleted=updated_donation.deleted,
