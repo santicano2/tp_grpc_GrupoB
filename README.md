@@ -37,7 +37,23 @@ Trabajo práctico sobre RPC de la materia Desarrollo de Software en Sistemas Dis
    docker-compose up -d
    ```
 
-3. **Detener el sistema**:
+3. **Iniciar API**:
+
+   ```bash
+   cd API
+   ./mvnw compile        # Generar clases gRPC
+   ./mvnw spring-boot:run
+   ```
+
+4. **Iniciar FrontEnd**:
+
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+
+5. **Detener el sistema**:
    ```bash
    docker-compose down
    ```

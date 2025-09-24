@@ -87,11 +87,11 @@ export const useUserManagement = () => {
     }
   };
 
-  const deactivateUser = async (username) => {
+  const deactivateUser = async (userId) => {
     try {
       setError(null);
 
-      await apiService.deactivateUser(username, user?.username);
+      await apiService.deactivateUser(userId, user?.username);
 
       // refrescar la lista de usuarios
       await fetchUsers();
@@ -111,7 +111,7 @@ export const useUserManagement = () => {
 
       if (targetUser.active) {
         // si esta activo, desactivar
-        await deactivateUser(targetUser.username);
+        await deactivateUser(targetUser.id);
       } else {
         // si esta inactivo, reactivar (modificar con active: true)
         await updateUser(targetUser.id, {

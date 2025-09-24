@@ -88,24 +88,47 @@ public class UsuarioController {
         @PutMapping("/modificar/{id}")
     public ResponseEntity<UserDTO> modificar(@PathVariable int id, @RequestBody UserDTO userDto,  @RequestParam String actor) {
         try {
+            System.out.println("=== MODIFICAR USUARIO ===");
+            System.out.println("ID from path: " + id);
+            System.out.println("Actor: " + actor);
+            System.out.println("UserDTO received: " + userDto);
+            
+            userDto.setId(id); // asegurar que el UserDTO tenga el ID correcto
+            System.out.println("UserDTO after setting ID: " + userDto);
+            
             Users.User updatedUser = usuarioClientService.modificarUsuario(userDto, actor);
+            System.out.println("User updated successfully: " + updatedUser);
             return new ResponseEntity<>(mapToDTO(updatedUser), HttpStatus.OK);
         } catch (Exception e) {
+            System.err.println("ERROR in modificar: " + e.getClass().getSimpleName() + " - " + e.getMessage());
+            e.printStackTrace();
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST); 
         }
     }
 
     @DeleteMapping("/baja/{id}")
     public ResponseEntity<?> darDeBaja(@PathVariable int id, @RequestParam String actor) {
+        System.out.println("=== DEACTIVATE USER REQUEST ===");
+        System.out.println("ID: " + id);
+        System.out.println("Actor: " + actor);
         try {
+            System.out.println("Calling bajaUsuario service...");
             Users.User user = usuarioClientService.bajaUsuario(id, actor);
+            System.out.println("DeactivateUser successful, user: " + user);
             return ResponseEntity.ok(Map.of(
                 "message", "Usuario dado de baja correctamente",
                 "user", mapToDTO(user)
             ));
         } catch (io.grpc.StatusRuntimeException e) {
+            System.out.println("gRPC error in deactivateUser: " + e.getStatus());
+            System.out.println("Error description: " + e.getStatus().getDescription());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of("error", e.getStatus().getDescription()));
+        } catch (Exception e) {
+            System.out.println("Unexpected error in deactivateUser: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Error interno del servidor"));
         }
     }
 

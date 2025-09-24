@@ -89,17 +89,33 @@ class UsuariosService(users_pb2_grpc.UsuariosServiceServicer):
         if request.lastname: update_data['apellido'] = request.lastname
         if request.phone: update_data['telefono'] = request.phone
         if request.email: update_data['email'] = request.email
-        if request.HasField('role'): update_data['rol'] = int(request.role)
+        if request.HasField('role'): 
+            # Convert numeric enum value to string name for database ENUM column
+            role_name = users_pb2.Role.Name(request.role)
+            update_data['rol'] = role_name
         if request.HasField('active'): update_data['activo'] = bool(request.active)
 
         if update_data:
             set_clause = ", ".join([f"{k} = %s" for k in update_data.keys()])
             params = list(update_data.values()) + [request.id]
             db.db.execute_update(f"UPDATE usuarios SET {set_clause} WHERE id = %s", tuple(params))
-            db.db.commit()
+            # db.db.commit() - Removed: execute_update already handles commit internally
 
         # devolver usuario actualizado
         updated_row = db.db.execute_query("SELECT * FROM usuarios WHERE id = %s", (request.id,))[0]
+        print(f"DEBUG: updated_row['rol'] = {updated_row['rol']}, type = {type(updated_row['rol'])}")
+        
+        # Convertir rol a entero si es string
+        rol_value = updated_row['rol']
+        if isinstance(rol_value, str):
+            try:
+                rol_value = users_pb2.Role.Value(rol_value)
+            except ValueError:
+                # Si no es un nombre válido de enum, intentar conversión directa
+                rol_value = int(rol_value)
+        else:
+            rol_value = int(rol_value)
+        
         return users_pb2.User(
             id=updated_row['id'],
             username=updated_row['nombre_usuario'],
@@ -107,46 +123,75 @@ class UsuariosService(users_pb2_grpc.UsuariosServiceServicer):
             lastname=updated_row['apellido'],
             phone=updated_row['telefono'] or "",
             email=updated_row['email'],
-            role=int(updated_row['rol']),
+            role=rol_value,
             active=bool(updated_row['activo'])
         )
 
 
     def DeactivateUser(self, request, context):
+        print("=== DEACTIVATE USER REQUEST ===")
+        print(f"Actor username: {request.actor_username}")
+        print(f"User ID: {request.id}")
+        
         actor = require_user(request.actor_username)
+        print(f"Actor found: {actor}")
         if not actor or not can_manage_users(actor.role):
+            print("Permission denied - actor not authorized")
             context.abort(grpc.StatusCode.PERMISSION_DENIED, "No autorizado")
 
         try:
+            print("Checking if user exists...")
             results = db.db.execute_query("SELECT * FROM usuarios WHERE id = %s", (request.id,))
             if not results:
+                print("User not found")
                 context.abort(grpc.StatusCode.NOT_FOUND, "Usuario inexistente")
             user_row = results[0]
+            print(f"User found: {user_row}")
 
+            print("Updating user status to inactive...")
             db.db.execute_update("UPDATE usuarios SET activo = 0 WHERE id = %s", (request.id,))
-            db.db.commit()
+            print("User deactivated successfully")
 
+            print("Removing future event participations...")
             remove_query = """
                 DELETE FROM evento_participaciones 
                 WHERE usuario_id = %s 
                 AND evento_id IN (SELECT id FROM eventos WHERE fecha_evento > NOW())
             """
             db.db.execute_update(remove_query, (request.id,))
-            db.db.commit()
+            print("Event participations removed")
 
+            print("Fetching updated user...")
             updated = db.db.execute_query("SELECT * FROM usuarios WHERE id = %s", (request.id,))[0]
-            return users_pb2.User(
+            print(f"Updated user: {updated}")
+            
+            # Handle role properly - convert ENUM string to protobuf enum value
+            role_value = updated['rol']
+            print(f"Role value from DB: {role_value} (type: {type(role_value)})")
+            if isinstance(role_value, str):
+                role_enum = users_pb2.Role.Value(role_value)
+                print(f"Converted role to enum: {role_enum}")
+            else:
+                role_enum = int(role_value)
+                print(f"Role as int: {role_enum}")
+            
+            response_user = users_pb2.User(
                 id=updated['id'],
                 username=updated['nombre_usuario'],
                 name=updated['nombre'],
                 lastname=updated['apellido'],
                 phone=updated['telefono'] or "",
                 email=updated['email'],
-                role=int(updated['rol']),
+                role=role_enum,
                 active=bool(updated['activo'])
             )
+            print(f"Returning user: {response_user}")
+            return response_user
 
         except Exception as e:
+            print(f"Exception in DeactivateUser: {str(e)}")
+            import traceback
+            traceback.print_exc()
             context.abort(grpc.StatusCode.INTERNAL, f"Error al desactivar usuario: {str(e)}")
 
     def ListUsers(self, request, context):

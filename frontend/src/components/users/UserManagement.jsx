@@ -152,7 +152,7 @@ const UserManagement = () => {
                   <div className="font-medium">{user.username}</div>
                 </TableData>
                 <TableData>
-                  {user.name} {user.lastName}
+                  {user.name} {user.lastname}
                 </TableData>
                 <TableData>{user.email}</TableData>
                 <TableData>{user.phone || "-"}</TableData>
