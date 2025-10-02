@@ -1,0 +1,295 @@
+{
+	"info": {
+		"_postman_id": "kafka-server-tp2",
+		"name": "TP2 Kafka Server - ONG Empuje Comunitario",
+		"description": "Collection completa para probar todos los endpoints del Kafka Server del TP2",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health & Status",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["health"]
+						},
+						"description": "Verifica el estado del servidor, base de datos y Kafka"
+					}
+				},
+				{
+					"name": "Lista Topics Kafka",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/topics",
+							"host": ["{{baseUrl}}"],
+							"path": ["topics"]
+						},
+						"description": "Obtiene la lista de todos los topics de Kafka disponibles"
+					}
+				},
+				{
+					"name": "Root Info",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/",
+							"host": ["{{baseUrl}}"],
+							"path": [""]
+						},
+						"description": "Información básica del servidor"
+					}
+				}
+			]
+		},
+		{
+			"name": "Solicitudes de Donaciones",
+			"item": [
+				{
+					"name": "Crear Solicitud de Donación",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"id_solicitud\": \"SOL-POSTMAN-001\",\n  \"donaciones\": [\n    {\n      \"category\": \"ALIMENTOS\",\n      \"description\": \"Leche en polvo para bebés\"\n    },\n    {\n      \"category\": \"ROPA\",\n      \"description\": \"Abrigos de invierno talle L\"\n    },\n    {\n      \"category\": \"UTILES_ESCOLARES\",\n      \"description\": \"Cuadernos y lápices\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/solicitar-donaciones",
+							"host": ["{{baseUrl}}"],
+							"path": ["solicitar-donaciones"]
+						},
+						"description": "Publica una nueva solicitud de donaciones en Kafka"
+					}
+				},
+				{
+					"name": "Ver Solicitudes Externas",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/solicitudes-externas",
+							"host": ["{{baseUrl}}"],
+							"path": ["solicitudes-externas"]
+						},
+						"description": "Obtiene todas las solicitudes de donaciones de otras organizaciones"
+					}
+				}
+			]
+		},
+		{
+			"name": "Ofertas de Donaciones",
+			"item": [
+				{
+					"name": "Crear Oferta de Donación",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"id_oferta\": \"OF-POSTMAN-001\",\n  \"donaciones\": [\n    {\n      \"categoria\": \"JUGUETES\",\n      \"descripcion\": \"Peluches variados\",\n      \"cantidad\": 15\n    },\n    {\n      \"categoria\": \"UTILES_ESCOLARES\",\n      \"descripcion\": \"Cuadernos A4 rayados\",\n      \"cantidad\": 50\n    },\n    {\n      \"categoria\": \"ALIMENTOS\",\n      \"descripcion\": \"Conservas de verduras\",\n      \"cantidad\": 20\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/ofrecer-donaciones",
+							"host": ["{{baseUrl}}"],
+							"path": ["ofrecer-donaciones"]
+						},
+						"description": "Publica una nueva oferta de donaciones en Kafka"
+					}
+				},
+				{
+					"name": "Ver Ofertas Externas",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/ofertas-externas",
+							"host": ["{{baseUrl}}"],
+							"path": ["ofertas-externas"]
+						},
+						"description": "Obtiene todas las ofertas de donaciones de otras organizaciones"
+					}
+				}
+			]
+		},
+		{
+			"name": "Eventos Solidarios",
+			"item": [
+				{
+					"name": "Publicar Evento",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Jornada de Salud Comunitaria\",\n  \"descripcion\": \"Controles médicos gratuitos para toda la familia. Incluye pediatría, clínica médica y odontología\",\n  \"fecha_hora\": \"2025-11-15T10:00:00\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/publicar-evento",
+							"host": ["{{baseUrl}}"],
+							"path": ["publicar-evento"]
+						},
+						"description": "Publica un nuevo evento solidario en Kafka"
+					}
+				},
+				{
+					"name": "Ver Eventos Externos",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/eventos-externos",
+							"host": ["{{baseUrl}}"],
+							"path": ["eventos-externos"]
+						},
+						"description": "Obtiene todos los eventos de otras organizaciones"
+					}
+				},
+				{
+					"name": "Adherir Voluntario a Evento",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"id_voluntario\": 1,\n  \"nombre\": \"Juan Carlos\",\n  \"apellido\": \"Pérez González\",\n  \"telefono\": \"11-4567-8901\",\n  \"email\": \"juan.perez@email.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/adherir-evento/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["adherir-evento", "1"]
+						},
+						"description": "Permite que un voluntario se adhiera a un evento externo (cambiar el ID del evento en la URL)"
+					}
+				}
+			]
+		},
+		{
+			"name": "Ejemplos de Prueba",
+			"item": [
+				{
+					"name": "Solicitud - Alimentos Urgentes",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"id_solicitud\": \"SOL-URGENTE-001\",\n  \"donaciones\": [\n    {\n      \"category\": \"ALIMENTOS\",\n      \"description\": \"Leche larga vida - URGENTE\"\n    },\n    {\n      \"category\": \"ALIMENTOS\",\n      \"description\": \"Pañales para bebés\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/solicitar-donaciones",
+							"host": ["{{baseUrl}}"],
+							"path": ["solicitar-donaciones"]
+						},
+						"description": "Ejemplo de solicitud urgente de alimentos"
+					}
+				},
+				{
+					"name": "Oferta - Ropa de Invierno",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"id_oferta\": \"OF-INVIERNO-001\",\n  \"donaciones\": [\n    {\n      \"categoria\": \"ROPA\",\n      \"descripcion\": \"Camperas de invierno adulto\",\n      \"cantidad\": 30\n    },\n    {\n      \"categoria\": \"ROPA\",\n      \"descripcion\": \"Bufandas y gorros\",\n      \"cantidad\": 45\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/ofrecer-donaciones",
+							"host": ["{{baseUrl}}"],
+							"path": ["ofrecer-donaciones"]
+						},
+						"description": "Ejemplo de oferta de ropa de invierno"
+					}
+				},
+				{
+					"name": "Evento - Campaña Educativa",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Campaña de Alfabetización\",\n  \"descripcion\": \"Clases gratuitas de lectura y escritura para adultos. Se entregarán útiles escolares y certificados\",\n  \"fecha_hora\": \"2025-12-01T18:00:00\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/publicar-evento",
+							"host": ["{{baseUrl}}"],
+							"path": ["publicar-evento"]
+						},
+						"description": "Ejemplo de evento educativo"
+					}
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8090",
+			"type": "string",
+			"description": "URL base del Kafka Server"
+		}
+	]
+}

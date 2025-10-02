@@ -155,10 +155,19 @@ class KafkaManager:
         Lista todos los topics disponibles
         """
         try:
-            metadata = self.admin_client.describe_topics()
-            topics = list(metadata.keys())
-            logger.info(f"Topics disponibles: {topics}")
-            return topics
+            temp_consumer = KafkaConsumer(
+                bootstrap_servers=self.bootstrap_servers.split(','),
+                group_id='temp_admin_group',
+                consumer_timeout_ms=5000
+            )
+            
+            topics = temp_consumer.topics()
+            temp_consumer.close()
+            
+            user_topics = [topic for topic in list(topics) if not topic.startswith('__')]
+            
+            logger.info(f"Topics disponibles: {user_topics}")
+            return user_topics
         except Exception as e:
             logger.error(f"Error listando topics: {e}")
             return []
