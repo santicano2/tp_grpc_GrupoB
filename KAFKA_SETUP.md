@@ -61,6 +61,7 @@ docker exec empuje_kafka kafka-topics --list --bootstrap-server kafka:29092
 
 ```bash
 curl http://localhost:8090                 # Estado del servidor
+curl http://localhost:8090/health          # Health check
 curl http://localhost:8090/topics          # Listar topics
 ```
 
@@ -80,14 +81,27 @@ MySQL                Kafka Cluster
 
 ## Endpoints del Servidor Kafka
 
+### Estado y Monitoreo
+
 - `GET /` - Estado del servidor
+- `GET /health` - Health check completo
 - `GET /topics` - Listar topics disponibles
-- `POST /solicitar-donaciones` - Solicitar donaciones
-- `POST /ofrecer-donaciones` - Ofrecer donaciones
+
+### Publicar Mensajes
+
+- `POST /solicitar-donaciones` - Solicitar donaciones a otras ONGs
+- `POST /ofrecer-donaciones` - Ofrecer donaciones disponibles
 - `POST /publicar-evento` - Publicar evento solidario
+
+### Consultar Mensajes
+
 - `GET /solicitudes-externas` - Ver solicitudes de otras ONGs
 - `GET /ofertas-externas` - Ver ofertas de otras ONGs
 - `GET /eventos-externos` - Ver eventos de otras ONGs
+
+### Acciones
+
+- `POST /adherir-evento/{evento_id}` - Adherirse a evento de otra ONG
 
 ## ID de Organización
 
