@@ -1,9 +1,10 @@
 package com.example.api.service;
 
-import com.example.api.dto.SolicitudDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+
+import com.example.api.dto.SolicitudDTO;
 
 @Service
 public class SolicitudKafkaProducerService {

@@ -1,12 +1,14 @@
 package com.example.api.service;
 
-import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.stereotype.Service;
-import com.example.api.dto.SolicitudDTO;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.stereotype.Service;
+
+import com.example.api.dto.SolicitudDTO;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class SolicitudKafkaService {
