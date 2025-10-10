@@ -143,6 +143,13 @@ def save_external_donation_offer(data):
         donaciones = data.get('donaciones', [])
         
         for donacion in donaciones:
+            # Extraer solo el número de la cantidad (ej: "2kg" -> 2)
+            cantidad_str = str(donacion.get('cantidad', '0'))
+            # Extraer solo dígitos del inicio
+            import re
+            cantidad_match = re.match(r'(\d+)', cantidad_str)
+            cantidad = int(cantidad_match.group(1)) if cantidad_match else 0
+            
             query = """
                 INSERT INTO ofertas_externas 
                 (id_oferta, id_organizacion_donante, categoria, descripcion, cantidad, activa)
@@ -159,7 +166,7 @@ def save_external_donation_offer(data):
                 org_id,
                 donacion.get('categoria'),
                 donacion.get('descripcion'),
-                donacion.get('cantidad', 0),
+                cantidad,
                 True
             ))
         
@@ -418,9 +425,11 @@ async def get_solicitudes_externas():
         cursor = connection.cursor(dictionary=True)
         
         query = """
-            SELECT s.*, o.nombre as nombre_organizacion
+            SELECT s.*, 
+                   COALESCE(org1.nombre, org2.nombre) as nombre_organizacion
             FROM solicitudes_externas s
-            LEFT JOIN organizaciones o ON s.id_organizacion_solicitante = o.id_organizacion
+            LEFT JOIN organizaciones org1 ON s.id_organizacion_solicitante = org1.id_organizacion
+            LEFT JOIN organizaciones org2 ON s.id_organizacion_solicitante = org2.id
             WHERE s.activa = TRUE
             ORDER BY s.fecha_solicitud DESC
         """
@@ -478,17 +487,17 @@ async def get_ofertas_externas():
             SELECT 
                 o.id_oferta,
                 o.id_organizacion_donante,
-                org.nombre as nombre_organizacion,
-                od.categoria,
-                od.descripcion as descripcion_donacion,
-                od.cantidad,
+                COALESCE(org1.nombre, org2.nombre) as nombre_organizacion,
+                o.categoria,
+                o.descripcion,
+                o.cantidad,
                 o.fecha_oferta,
                 o.activa
             FROM ofertas_externas o
-            LEFT JOIN organizaciones org ON o.id_organizacion_donante = org.id_organizacion
-            LEFT JOIN donaciones_oferta od ON o.id_oferta = od.id_oferta
+            LEFT JOIN organizaciones org1 ON o.id_organizacion_donante = org1.id_organizacion
+            LEFT JOIN organizaciones org2 ON o.id_organizacion_donante = org2.id
             WHERE o.activa = TRUE
-            ORDER BY o.fecha_oferta DESC, od.categoria
+            ORDER BY o.fecha_oferta DESC, o.id_oferta, o.categoria
         """
         
         cursor.execute(query)
@@ -509,13 +518,12 @@ async def get_ofertas_externas():
                     'donaciones': []
                 }
             
-            # Agregar donacion si existe
-            if row['categoria']:
-                ofertas_dict[oferta_id]['donaciones'].append({
-                    'categoria': row['categoria'],
-                    'descripcion': row['descripcion_donacion'],
-                    'cantidad': row['cantidad']
-                })
+            # Agregar donacion
+            ofertas_dict[oferta_id]['donaciones'].append({
+                'categoria': row['categoria'],
+                'descripcion': row['descripcion'],
+                'cantidad': row['cantidad']
+            })
         
         ofertas_list = list(ofertas_dict.values())
         
@@ -540,9 +548,11 @@ async def get_eventos_externos():
         cursor = connection.cursor(dictionary=True)
         
         query = """
-            SELECT e.*, o.nombre as nombre_organizacion
+            SELECT e.*, 
+                   COALESCE(org1.nombre, org2.nombre) as nombre_organizacion
             FROM eventos_externos e
-            LEFT JOIN organizaciones o ON e.id_organizacion = o.id_organizacion
+            LEFT JOIN organizaciones org1 ON e.id_organizacion = org1.id_organizacion
+            LEFT JOIN organizaciones org2 ON e.id_organizacion = org2.id
             WHERE e.activo = TRUE AND e.fecha_evento >= NOW()
             ORDER BY e.fecha_evento ASC
         """
@@ -557,10 +567,9 @@ async def get_eventos_externos():
                 'idEvento': str(row['id_evento']),
                 'idOrganizacion': row['id_organizacion'],
                 'nombreOrganizacion': row['nombre_organizacion'],
-                'titulo': row['titulo'],
+                'nombre': row['nombre'],
                 'descripcion': row['descripcion'],
                 'fechaEvento': row['fecha_evento'].isoformat() if row['fecha_evento'] else None,
-                'lugar': row['lugar'],
                 'activo': bool(row['activo'])
             })
         
