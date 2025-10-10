@@ -53,7 +53,7 @@ export const AuthProvider = ({ children }) => {
     setIsLoading(false);
   }, []);
 
-  const login = async (username, password) => {
+  const login = async (username, password, id_organizacion = "1") => {
     try {
       const response = await apiService.login(username, password);
 
@@ -67,6 +67,7 @@ export const AuthProvider = ({ children }) => {
           email: response.email,
           role: response.role,
           isActive: true,
+          id_organizacion: id_organizacion, // Agregar la organización para Kafka
         };
         setUser(userData);
         saveUserToStorage(userData);

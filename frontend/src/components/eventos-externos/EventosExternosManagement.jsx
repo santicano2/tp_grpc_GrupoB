@@ -43,8 +43,7 @@ const EventosExternosManagement = () => {
 
   // Estados para formulario de publicar evento
   const [formPublicar, setFormPublicar] = useState({
-    idOrganizacion: "",
-    idEvento: "",
+    idEvento: "", // Solo pedir el ID de evento, el de org viene del usuario
     nombre: "",
     descripcion: "",
     fechaHora: "",
@@ -52,8 +51,7 @@ const EventosExternosManagement = () => {
 
   // Estados para formulario de baja
   const [formBaja, setFormBaja] = useState({
-    idOrganizacion: "",
-    idEvento: "",
+    idEvento: "", // Solo pedir el ID de evento, el de org viene del usuario
   });
 
   // Estados para formulario de adhesión
@@ -96,7 +94,12 @@ const EventosExternosManagement = () => {
     setError(null);
     try {
       // Llamar directamente al Kafka Server que consulta la BD
-      const response = await fetch("http://localhost:8090/eventos-externos");
+      // Pasar el id_organizacion para excluir los propios eventos
+      const url = user?.id_organizacion
+        ? `http://localhost:8090/eventos-externos?exclude_org=${user.id_organizacion}`
+        : "http://localhost:8090/eventos-externos";
+
+      const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
         setEventosExternos(data.eventos || []);
@@ -137,8 +140,13 @@ const EventosExternosManagement = () => {
   // ============================================
 
   const enviarPublicacion = async () => {
+    // Validar que el usuario tenga id_organizacion
+    if (!user?.id_organizacion) {
+      setError("Error: No se pudo obtener la organización del usuario");
+      return;
+    }
+
     if (
-      !formPublicar.idOrganizacion ||
       !formPublicar.idEvento ||
       !formPublicar.nombre ||
       !formPublicar.descripcion ||
@@ -152,7 +160,7 @@ const EventosExternosManagement = () => {
     setError(null);
     try {
       const evento = {
-        idOrganizacion: parseInt(formPublicar.idOrganizacion),
+        idOrganizacion: user.id_organizacion, // Usar la org del usuario logueado
         idEvento: parseInt(formPublicar.idEvento),
         nombre: formPublicar.nombre,
         descripcion: formPublicar.descripcion,
@@ -172,7 +180,6 @@ const EventosExternosManagement = () => {
 
       setModalPublicarEvento(false);
       setFormPublicar({
-        idOrganizacion: "",
         idEvento: "",
         nombre: "",
         descripcion: "",
@@ -192,8 +199,14 @@ const EventosExternosManagement = () => {
   // ============================================
 
   const enviarBaja = async () => {
-    if (!formBaja.idOrganizacion || !formBaja.idEvento) {
-      setError("Complete todos los campos");
+    // Validar que el usuario tenga id_organizacion
+    if (!user?.id_organizacion) {
+      setError("Error: No se pudo obtener la organización del usuario");
+      return;
+    }
+
+    if (!formBaja.idEvento) {
+      setError("Complete el ID de evento");
       return;
     }
 
@@ -201,7 +214,7 @@ const EventosExternosManagement = () => {
     setError(null);
     try {
       const baja = {
-        idOrganizacion: parseInt(formBaja.idOrganizacion),
+        idOrganizacion: user.id_organizacion, // Usar la org del usuario logueado
         idEvento: parseInt(formBaja.idEvento),
       };
 
@@ -214,7 +227,7 @@ const EventosExternosManagement = () => {
       if (!response.ok) throw new Error("Error al dar de baja");
 
       setModalDarBaja(false);
-      setFormBaja({ idOrganizacion: "", idEvento: "" });
+      setFormBaja({ idEvento: "" });
       alert("Evento dado de baja correctamente");
     } catch (error) {
       console.error("Error:", error);
@@ -576,18 +589,15 @@ const EventosExternosManagement = () => {
         size="lg"
       >
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="ID de Organización *"
-              type="number"
-              value={formPublicar.idOrganizacion}
-              onChange={(e) =>
-                setFormPublicar({
-                  ...formPublicar,
-                  idOrganizacion: e.target.value,
-                })
-              }
-            />
+          {/* Mostrar la organización del usuario (solo lectura) */}
+          <div className="bg-purple-50 border border-purple-200 rounded-md p-3">
+            <p className="text-sm text-purple-800">
+              <strong>Tu Organización:</strong>{" "}
+              {user?.id_organizacion || "No definida"}
+            </p>
+          </div>
+
+          <div>
             <Input
               label="ID de Evento *"
               type="number"
@@ -595,6 +605,7 @@ const EventosExternosManagement = () => {
               onChange={(e) =>
                 setFormPublicar({ ...formPublicar, idEvento: e.target.value })
               }
+              placeholder="Ejemplo: 301"
             />
           </div>
 
@@ -604,7 +615,7 @@ const EventosExternosManagement = () => {
             onChange={(e) =>
               setFormPublicar({ ...formPublicar, nombre: e.target.value })
             }
-            placeholder="Ej: Jornada de Juegos Solidarios"
+            placeholder="Ej: Jornada de Salud Comunitaria"
           />
 
           <div className="space-y-1">
@@ -661,14 +672,13 @@ const EventosExternosManagement = () => {
             Notifica a la red que diste de baja un evento publicado
           </p>
 
-          <Input
-            label="ID de Organización *"
-            type="number"
-            value={formBaja.idOrganizacion}
-            onChange={(e) =>
-              setFormBaja({ ...formBaja, idOrganizacion: e.target.value })
-            }
-          />
+          {/* Mostrar la organización del usuario (solo lectura) */}
+          <div className="bg-red-50 border border-red-200 rounded-md p-3">
+            <p className="text-sm text-red-800">
+              <strong>Tu Organización:</strong>{" "}
+              {user?.id_organizacion || "No definida"}
+            </p>
+          </div>
 
           <Input
             label="ID de Evento *"
@@ -677,6 +687,7 @@ const EventosExternosManagement = () => {
             onChange={(e) =>
               setFormBaja({ ...formBaja, idEvento: e.target.value })
             }
+            placeholder="Ejemplo: 301"
           />
 
           <div className="flex justify-end gap-3 pt-4 border-t">
@@ -710,7 +721,9 @@ const EventosExternosManagement = () => {
               </p>
               <p className="text-sm text-blue-800">
                 <strong>Fecha:</strong>{" "}
-                {formatearFecha(eventoSeleccionado.fechaHora)}
+                {formatearFecha(
+                  eventoSeleccionado.fechaEvento || eventoSeleccionado.fechaHora
+                )}
               </p>
               <p className="text-sm text-blue-700 mt-2">
                 {eventoSeleccionado.descripcion}

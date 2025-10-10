@@ -48,22 +48,19 @@ const SolicitudesManagement = () => {
 
   // Estados para formulario de crear solicitud
   const [formSolicitud, setFormSolicitud] = useState({
-    idOrganizacion: "",
-    idSolicitud: "",
+    idSolicitud: "", // Solo pedir el ID de solicitud, el de org viene del usuario
     donaciones: [{ categoria: "", descripcion: "" }],
   });
 
   // Estados para formulario de crear oferta
   const [formOferta, setFormOferta] = useState({
-    idOferta: "",
-    idOrganizacionDonante: "",
+    idOferta: "", // Solo pedir el ID de oferta, el de org viene del usuario
     donaciones: [{ categoria: "", descripcion: "", cantidad: "" }],
   });
 
   // Estados para formulario de baja
   const [formBaja, setFormBaja] = useState({
-    idOrganizacionSolicitante: "",
-    idSolicitud: "",
+    idSolicitud: "", // Solo pedir el ID de solicitud, el de org viene del usuario
   });
 
   // Estados para formulario de transferencia
@@ -94,9 +91,12 @@ const SolicitudesManagement = () => {
     setError(null);
     try {
       // Llamar directamente al Kafka Server que consulta la BD
-      const response = await fetch(
-        "http://localhost:8090/solicitudes-externas"
-      );
+      // Pasar el id_organizacion para excluir las propias solicitudes
+      const url = user?.id_organizacion
+        ? `http://localhost:8090/solicitudes-externas?exclude_org=${user.id_organizacion}`
+        : "http://localhost:8090/solicitudes-externas";
+
+      const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
         setSolicitudesExternas(data.solicitudes || []);
@@ -116,7 +116,12 @@ const SolicitudesManagement = () => {
     setError(null);
     try {
       // Llamar directamente al Kafka Server que consulta la BD
-      const response = await fetch("http://localhost:8090/ofertas-externas");
+      // Pasar el id_organizacion para excluir las propias ofertas
+      const url = user?.id_organizacion
+        ? `http://localhost:8090/ofertas-externas?exclude_org=${user.id_organizacion}`
+        : "http://localhost:8090/ofertas-externas";
+
+      const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
         setOfertasExternas(data.ofertas || []);
@@ -182,8 +187,14 @@ const SolicitudesManagement = () => {
   };
 
   const enviarSolicitud = async () => {
-    if (!formSolicitud.idOrganizacion || !formSolicitud.idSolicitud) {
-      setError("Complete ID de organización e ID de solicitud");
+    // Validar que el usuario tenga id_organizacion
+    if (!user?.id_organizacion) {
+      setError("Error: No se pudo obtener la organización del usuario");
+      return;
+    }
+
+    if (!formSolicitud.idSolicitud) {
+      setError("Complete el ID de solicitud");
       return;
     }
 
@@ -202,7 +213,7 @@ const SolicitudesManagement = () => {
       for (const donacion of donacionesValidas) {
         const solicitud = {
           idSolicitud: parseInt(formSolicitud.idSolicitud),
-          idOrganizacion: parseInt(formSolicitud.idOrganizacion),
+          idOrganizacion: user.id_organizacion, // Usar la org del usuario logueado
           categoria: donacion.categoria,
           descripcion: donacion.descripcion,
         };
@@ -218,7 +229,6 @@ const SolicitudesManagement = () => {
 
       setModalCrearSolicitud(false);
       setFormSolicitud({
-        idOrganizacion: "",
         idSolicitud: "",
         donaciones: [{ categoria: "", descripcion: "" }],
       });
@@ -261,8 +271,14 @@ const SolicitudesManagement = () => {
   };
 
   const enviarOferta = async () => {
-    if (!formOferta.idOferta || !formOferta.idOrganizacionDonante) {
-      setError("Complete ID de oferta e ID de organización donante");
+    // Validar que el usuario tenga id_organizacion
+    if (!user?.id_organizacion) {
+      setError("Error: No se pudo obtener la organización del usuario");
+      return;
+    }
+
+    if (!formOferta.idOferta) {
+      setError("Complete el ID de oferta");
       return;
     }
 
@@ -280,7 +296,7 @@ const SolicitudesManagement = () => {
     try {
       const oferta = {
         idOferta: parseInt(formOferta.idOferta),
-        idOrganizacionDonante: parseInt(formOferta.idOrganizacionDonante),
+        idOrganizacionDonante: user.id_organizacion, // Usar la org del usuario logueado
         donaciones: donacionesValidas,
       };
 
@@ -298,7 +314,6 @@ const SolicitudesManagement = () => {
       setModalCrearOferta(false);
       setFormOferta({
         idOferta: "",
-        idOrganizacionDonante: "",
         donaciones: [{ categoria: "", descripcion: "", cantidad: "" }],
       });
       alert("Oferta enviada correctamente");
@@ -315,8 +330,14 @@ const SolicitudesManagement = () => {
   // ============================================
 
   const enviarBaja = async () => {
-    if (!formBaja.idOrganizacionSolicitante || !formBaja.idSolicitud) {
-      setError("Complete todos los campos");
+    // Validar que el usuario tenga id_organizacion
+    if (!user?.id_organizacion) {
+      setError("Error: No se pudo obtener la organización del usuario");
+      return;
+    }
+
+    if (!formBaja.idSolicitud) {
+      setError("Complete el ID de solicitud");
       return;
     }
 
@@ -324,7 +345,7 @@ const SolicitudesManagement = () => {
     setError(null);
     try {
       const baja = {
-        idOrganizacionSolicitante: parseInt(formBaja.idOrganizacionSolicitante),
+        idOrganizacionSolicitante: user.id_organizacion, // Usar la org del usuario logueado
         idSolicitud: parseInt(formBaja.idSolicitud),
       };
 
@@ -337,7 +358,7 @@ const SolicitudesManagement = () => {
       if (!response.ok) throw new Error("Error al dar de baja");
 
       setModalDarBaja(false);
-      setFormBaja({ idOrganizacionSolicitante: "", idSolicitud: "" });
+      setFormBaja({ idSolicitud: "" });
       alert("Solicitud dada de baja correctamente");
     } catch (error) {
       console.error("Error:", error);
@@ -394,8 +415,13 @@ const SolicitudesManagement = () => {
   };
 
   const enviarTransferencia = async () => {
-    if (!formTransferencia.idOrganizacionDonante) {
-      setError("Complete ID de organización donante");
+    if (!user?.id_organizacion) {
+      setError("Error: No se pudo obtener la organización del usuario");
+      return;
+    }
+
+    if (!solicitudSeleccionada) {
+      setError("No hay solicitud seleccionada");
       return;
     }
 
@@ -412,13 +438,13 @@ const SolicitudesManagement = () => {
     setError(null);
     try {
       const transferencia = {
-        idSolicitud: solicitudSeleccionada.idSolicitud,
+        idSolicitud: parseInt(solicitudSeleccionada.idSolicitud),
         idOrganizacionSolicitante: solicitudSeleccionada.idOrganizacion,
-        idOrganizacionDonante: parseInt(
-          formTransferencia.idOrganizacionDonante
-        ),
+        idOrganizacionDonante: user.id_organizacion, // Usar la org del usuario logueado
         donaciones: donacionesValidas,
       };
+
+      console.log("Enviando transferencia:", transferencia);
 
       const response = await fetch(
         `${API_BASE_URL}/api/solicitudes/transferencias/realizar`,
@@ -429,11 +455,21 @@ const SolicitudesManagement = () => {
         }
       );
 
-      if (!response.ok) throw new Error("Error al enviar transferencia");
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Error response:", errorText);
+        throw new Error("Error al enviar transferencia");
+      }
 
       setModalTransferir(false);
       setSolicitudSeleccionada(null);
+      setFormTransferencia({
+        donaciones: [{ categoria: "", descripcion: "", cantidad: "" }],
+      });
       alert("Transferencia realizada correctamente");
+
+      // Recargar solicitudes externas
+      cargarSolicitudesExternas();
     } catch (error) {
       console.error("Error:", error);
       setError("Error al realizar la transferencia");
@@ -785,18 +821,15 @@ const SolicitudesManagement = () => {
         size="lg"
       >
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="ID de Organización *"
-              type="number"
-              value={formSolicitud.idOrganizacion}
-              onChange={(e) =>
-                setFormSolicitud({
-                  ...formSolicitud,
-                  idOrganizacion: e.target.value,
-                })
-              }
-            />
+          {/* Mostrar la organización del usuario (solo lectura) */}
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+            <p className="text-sm text-blue-800">
+              <strong>Tu Organización:</strong>{" "}
+              {user?.id_organizacion || "No definida"}
+            </p>
+          </div>
+
+          <div>
             <Input
               label="ID de Solicitud *"
               type="number"
@@ -807,6 +840,7 @@ const SolicitudesManagement = () => {
                   idSolicitud: e.target.value,
                 })
               }
+              placeholder="Ejemplo: 101"
             />
           </div>
 
@@ -829,8 +863,10 @@ const SolicitudesManagement = () => {
                 className="flex gap-3 mb-3 p-3 bg-gray-50 rounded"
               >
                 <div className="flex-1">
-                  <Input
-                    label="Categoría"
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Categoría
+                  </label>
+                  <select
                     value={donacion.categoria}
                     onChange={(e) =>
                       actualizarDonacionSolicitud(
@@ -839,8 +875,14 @@ const SolicitudesManagement = () => {
                         e.target.value
                       )
                     }
-                    placeholder="ALIMENTOS"
-                  />
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Seleccionar...</option>
+                    <option value="ALIMENTOS">ALIMENTOS</option>
+                    <option value="ROPA">ROPA</option>
+                    <option value="JUGUETES">JUGUETES</option>
+                    <option value="UTILES_ESCOLARES">ÚTILES ESCOLARES</option>
+                  </select>
                 </div>
                 <div className="flex-1">
                   <Input
@@ -853,7 +895,7 @@ const SolicitudesManagement = () => {
                         e.target.value
                       )
                     }
-                    placeholder="Puré de tomates"
+                    placeholder="Ej: Arroz integral 1kg"
                   />
                 </div>
                 {formSolicitud.donaciones.length > 1 && (
@@ -891,7 +933,15 @@ const SolicitudesManagement = () => {
         size="lg"
       >
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          {/* Mostrar la organización del usuario (solo lectura) */}
+          <div className="bg-green-50 border border-green-200 rounded-md p-3">
+            <p className="text-sm text-green-800">
+              <strong>Tu Organización:</strong>{" "}
+              {user?.id_organizacion || "No definida"}
+            </p>
+          </div>
+
+          <div>
             <Input
               label="ID de Oferta *"
               type="number"
@@ -899,17 +949,7 @@ const SolicitudesManagement = () => {
               onChange={(e) =>
                 setFormOferta({ ...formOferta, idOferta: e.target.value })
               }
-            />
-            <Input
-              label="ID de Organización Donante *"
-              type="number"
-              value={formOferta.idOrganizacionDonante}
-              onChange={(e) =>
-                setFormOferta({
-                  ...formOferta,
-                  idOrganizacionDonante: e.target.value,
-                })
-              }
+              placeholder="Ejemplo: 201"
             />
           </div>
 
@@ -932,8 +972,10 @@ const SolicitudesManagement = () => {
                 className="flex gap-3 mb-3 p-3 bg-gray-50 rounded"
               >
                 <div className="flex-1">
-                  <Input
-                    label="Categoría"
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Categoría
+                  </label>
+                  <select
                     value={donacion.categoria}
                     onChange={(e) =>
                       actualizarDonacionOferta(
@@ -942,8 +984,14 @@ const SolicitudesManagement = () => {
                         e.target.value
                       )
                     }
-                    placeholder="ALIMENTOS"
-                  />
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Seleccionar...</option>
+                    <option value="ALIMENTOS">ALIMENTOS</option>
+                    <option value="ROPA">ROPA</option>
+                    <option value="JUGUETES">JUGUETES</option>
+                    <option value="UTILES_ESCOLARES">ÚTILES ESCOLARES</option>
+                  </select>
                 </div>
                 <div className="flex-1">
                   <Input
@@ -956,7 +1004,7 @@ const SolicitudesManagement = () => {
                         e.target.value
                       )
                     }
-                    placeholder="Puré de tomates"
+                    placeholder="Ej: Remeras de algodón"
                   />
                 </div>
                 <div className="flex-1">
@@ -970,7 +1018,7 @@ const SolicitudesManagement = () => {
                         e.target.value
                       )
                     }
-                    placeholder="2kg"
+                    placeholder="Ej: 10kg o 50 unidades"
                   />
                 </div>
                 {formOferta.donaciones.length > 1 && (
@@ -1012,17 +1060,13 @@ const SolicitudesManagement = () => {
             Notifica a la red que diste de baja una solicitud propia
           </p>
 
-          <Input
-            label="ID de Organización Solicitante *"
-            type="number"
-            value={formBaja.idOrganizacionSolicitante}
-            onChange={(e) =>
-              setFormBaja({
-                ...formBaja,
-                idOrganizacionSolicitante: e.target.value,
-              })
-            }
-          />
+          {/* Mostrar la organización del usuario (solo lectura) */}
+          <div className="bg-red-50 border border-red-200 rounded-md p-3">
+            <p className="text-sm text-red-800">
+              <strong>Tu Organización:</strong>{" "}
+              {user?.id_organizacion || "No definida"}
+            </p>
+          </div>
 
           <Input
             label="ID de Solicitud *"
@@ -1031,6 +1075,7 @@ const SolicitudesManagement = () => {
             onChange={(e) =>
               setFormBaja({ ...formBaja, idSolicitud: e.target.value })
             }
+            placeholder="Ejemplo: 101"
           />
 
           <div className="flex justify-end gap-3 pt-4 border-t">
@@ -1104,8 +1149,10 @@ const SolicitudesManagement = () => {
                 className="flex gap-3 mb-3 p-3 bg-gray-50 rounded"
               >
                 <div className="flex-1">
-                  <Input
-                    label="Categoría"
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Categoría
+                  </label>
+                  <select
                     value={donacion.categoria}
                     onChange={(e) =>
                       actualizarDonacionTransferencia(
@@ -1114,8 +1161,14 @@ const SolicitudesManagement = () => {
                         e.target.value
                       )
                     }
-                    placeholder="ALIMENTOS"
-                  />
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Seleccionar...</option>
+                    <option value="ALIMENTOS">ALIMENTOS</option>
+                    <option value="ROPA">ROPA</option>
+                    <option value="JUGUETES">JUGUETES</option>
+                    <option value="UTILES_ESCOLARES">ÚTILES ESCOLARES</option>
+                  </select>
                 </div>
                 <div className="flex-1">
                   <Input
@@ -1128,7 +1181,7 @@ const SolicitudesManagement = () => {
                         e.target.value
                       )
                     }
-                    placeholder="Puré de tomates"
+                    placeholder="Ej: Arroz integral"
                   />
                 </div>
                 <div className="flex-1">

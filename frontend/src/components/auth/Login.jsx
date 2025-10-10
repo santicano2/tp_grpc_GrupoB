@@ -9,6 +9,7 @@ const Login = () => {
   const [credentials, setCredentials] = useState({
     username: "",
     password: "",
+    id_organizacion: "1", // Default para testing
   });
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -21,7 +22,11 @@ const Login = () => {
     setError("");
 
     try {
-      const success = await login(credentials.username, credentials.password);
+      const success = await login(
+        credentials.username,
+        credentials.password,
+        credentials.id_organizacion // Pasar la org seleccionada
+      );
       if (!success) {
         setError("Credenciales incorrectas o usuario inactivo");
       }
@@ -79,6 +84,27 @@ const Login = () => {
               onChange={handleChange}
               placeholder="Ingrese su contraseña"
             />
+
+            {/* Selector de Organización para Testing Multi-Org */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Organización (Testing Multi-Org)
+              </label>
+              <select
+                name="id_organizacion"
+                value={credentials.id_organizacion}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="1">Organización 1 - Empuje Comunitario</option>
+                <option value="2">Organización 2 - Ayuda Vecinal</option>
+                <option value="3">Organización 3 - Manos Solidarias</option>
+                <option value="4">Organización 4 - Futuro Mejor</option>
+              </select>
+              <p className="mt-1 text-xs text-gray-500">
+                Selecciona la organización que representas para testing
+              </p>
+            </div>
           </div>
 
           {error && (

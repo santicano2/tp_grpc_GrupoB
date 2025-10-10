@@ -416,8 +416,12 @@ async def publicar_evento(evento: EventoSolidario):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/solicitudes-externas")
-async def get_solicitudes_externas():
-    """Obtiene las solicitudes de donaciones de otras organizaciones"""
+async def get_solicitudes_externas(exclude_org: str = None):
+    """Obtiene las solicitudes de donaciones de otras organizaciones
+    
+    Args:
+        exclude_org: ID de la organización a excluir (normalmente la propia)
+    """
     try:
         connection = get_db_connection()
         if not connection:
@@ -425,6 +429,7 @@ async def get_solicitudes_externas():
             
         cursor = connection.cursor(dictionary=True)
         
+        # Construir query con filtro opcional
         query = """
             SELECT s.*, 
                    COALESCE(org1.nombre, org2.nombre) as nombre_organizacion
@@ -432,8 +437,13 @@ async def get_solicitudes_externas():
             LEFT JOIN organizaciones org1 ON s.id_organizacion_solicitante = org1.id_organizacion
             LEFT JOIN organizaciones org2 ON s.id_organizacion_solicitante = org2.id
             WHERE s.activa = TRUE
-            ORDER BY s.fecha_solicitud DESC
         """
+        
+        # Agregar filtro para excluir organización propia
+        if exclude_org:
+            query += f" AND s.id_organizacion_solicitante != '{exclude_org}'"
+        
+        query += " ORDER BY s.fecha_solicitud DESC"
         
         cursor.execute(query)
         solicitudes_db = cursor.fetchall()
@@ -474,8 +484,12 @@ async def get_solicitudes_externas():
             connection.close()
 
 @app.get("/ofertas-externas")
-async def get_ofertas_externas():
-    """Obtiene las ofertas de donaciones de otras organizaciones (agrupadas por oferta con sus donaciones)"""
+async def get_ofertas_externas(exclude_org: str = None):
+    """Obtiene las ofertas de donaciones de otras organizaciones (agrupadas por oferta con sus donaciones)
+    
+    Args:
+        exclude_org: ID de la organización a excluir (normalmente la propia)
+    """
     try:
         connection = get_db_connection()
         if not connection:
@@ -498,8 +512,13 @@ async def get_ofertas_externas():
             LEFT JOIN organizaciones org1 ON o.id_organizacion_donante = org1.id_organizacion
             LEFT JOIN organizaciones org2 ON o.id_organizacion_donante = org2.id
             WHERE o.activa = TRUE
-            ORDER BY o.fecha_oferta DESC, o.id_oferta, o.categoria
         """
+        
+        # Agregar filtro para excluir organización propia
+        if exclude_org:
+            query += f" AND o.id_organizacion_donante != '{exclude_org}'"
+        
+        query += " ORDER BY o.fecha_oferta DESC, o.id_oferta, o.categoria"
         
         cursor.execute(query)
         rows = cursor.fetchall()
@@ -539,8 +558,12 @@ async def get_ofertas_externas():
             connection.close()
 
 @app.get("/eventos-externos")
-async def get_eventos_externos():
-    """Obtiene los eventos de otras organizaciones"""
+async def get_eventos_externos(exclude_org: str = None):
+    """Obtiene los eventos de otras organizaciones
+    
+    Args:
+        exclude_org: ID de la organización a excluir (normalmente la propia)
+    """
     try:
         connection = get_db_connection()
         if not connection:
@@ -555,8 +578,13 @@ async def get_eventos_externos():
             LEFT JOIN organizaciones org1 ON e.id_organizacion = org1.id_organizacion
             LEFT JOIN organizaciones org2 ON e.id_organizacion = org2.id
             WHERE e.activo = TRUE AND e.fecha_evento >= NOW()
-            ORDER BY e.fecha_evento ASC
         """
+        
+        # Agregar filtro para excluir organización propia
+        if exclude_org:
+            query += f" AND e.id_organizacion != '{exclude_org}'"
+        
+        query += " ORDER BY e.fecha_evento ASC"
         
         cursor.execute(query)
         rows = cursor.fetchall()
@@ -738,13 +766,16 @@ def process_baja_evento(message):
 def process_transferencia_donaciones(message):
     """Procesa mensajes del topic transferencia-donaciones-{id_solicitud}"""
     try:
+        logger.info(f"[TRANSFERENCIA] Recibido mensaje en topic {message.topic}")
+        logger.info(f"[TRANSFERENCIA] Contenido raw: {message.value}")
+        
         data = message.value
         id_solicitud = data.get('idSolicitud') or data.get('id_solicitud')
         id_org_solicitante = data.get('idOrganizacionSolicitante') or data.get('id_organizacion_solicitante')
         id_org_donante = data.get('idOrganizacionDonante') or data.get('id_organizacion_donante')
         donaciones = data.get('donaciones', [])
         
-        logger.info(f"Transferencia para solicitud {id_solicitud} de {id_org_donante} a {id_org_solicitante}")
+        logger.info(f"[TRANSFERENCIA] Procesando transferencia para solicitud {id_solicitud} de org {id_org_donante} a org {id_org_solicitante} con {len(donaciones)} donaciones")
         
         # Guardar cada donacion como una transferencia
         connection = get_db_connection()
