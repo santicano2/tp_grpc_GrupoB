@@ -1,4 +1,4 @@
-import { Users, Package, Calendar, Home, LogOut, Menu, X } from "lucide-react";
+import { Users, Package, Calendar, Home, LogOut, Menu, X, Send, Globe } from "lucide-react";
 
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -30,6 +30,18 @@ const Sidebar = ({ isOpen, onToggle, activeSection, onSectionChange }) => {
       icon: Calendar,
       roles: ["PRESIDENTE", "COORDINADOR", "VOLUNTARIO"],
     },
+    {
+    id: "solicitudes",
+    label: "Solicitudes",
+    icon: Send,
+    roles: ["PRESIDENTE", "VOCAL", "COORDINADOR", "VOLUNTARIO"],
+  },
+  {
+  id: "eventos-externos",
+  label: "Eventos Externos",
+  icon: Globe,
+  roles: ["PRESIDENTE", "VOCAL", "COORDINADOR", "VOLUNTARIO"],
+},
   ];
 
   const filteredMenuItems = menuItems.filter(
