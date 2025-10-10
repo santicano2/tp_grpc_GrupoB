@@ -17,7 +17,16 @@ class ApiService {
     };
 
     try {
-      const response = await fetch(url, config);
+      // timeout más largo para operaciones de modificación
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos
+
+      const response = await fetch(url, {
+        ...config,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         throw new Error(`HTTP error status: ${response.status}`);
@@ -119,9 +128,9 @@ class ApiService {
 
   async deactivateUser(id, actor) {
     return this.request(
-      `/usuarios/baja/${encodeURIComponent(
-        id
-      )}?actor=${encodeURIComponent(actor)}`,
+      `/usuarios/baja/${encodeURIComponent(id)}?actor=${encodeURIComponent(
+        actor
+      )}`,
       {
         method: "DELETE",
       }
@@ -233,6 +242,13 @@ class ApiService {
    * @returns {Promise<Object>} Item modificado
    */
   async updateInventoryItem(id, itemData, actor) {
+    const payload = {
+      id: parseInt(id), // asegurar que el id sea un número entero
+      category: itemData.category,
+      description: itemData.description,
+      quantity: parseInt(itemData.quantity), // asegurar que quantity también sea entero
+    };
+
     return this.request(
       `/donaciones/modificar/${id}?actor=${encodeURIComponent(actor)}`,
       {
@@ -240,11 +256,7 @@ class ApiService {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          id,
-          description: itemData.description,
-          quantity: itemData.quantity,
-        }),
+        body: JSON.stringify(payload),
       }
     );
   }

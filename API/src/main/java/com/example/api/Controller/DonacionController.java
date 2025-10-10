@@ -1,4 +1,4 @@
-package com.example.api.controller;
+package com.example.api.Controller;
 
 import java.util.ArrayList;
 import java.util.List;

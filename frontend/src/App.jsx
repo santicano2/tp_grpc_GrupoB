@@ -8,7 +8,10 @@ import Dashboard from "./components/dashboard/Dashboard";
 import UserManagement from "./components/users/UserManagement";
 import InventoryManagement from "./components/inventory/InventoryManagement";
 import EventManagement from "./components/events/EventManagement";
+import SolicitudesManagement from "./components/solicitudes/SolicitudesManagement";
+import EventosExternosManagement from "./components/eventos-externos/EventosExternosManagement";
 import Sidebar from "./components/layout/Sidebar";
+
 
 const AppContent = () => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -32,7 +35,7 @@ const AppContent = () => {
   }
 
   if (!isAuthenticated) {
-    return <Login />;
+    return <Login />; 
   }
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
@@ -45,6 +48,10 @@ const AppContent = () => {
         return <InventoryManagement />;
       case "events":
         return <EventManagement />;
+        case "solicitudes": 
+      return <SolicitudesManagement />; 
+      case "eventos-externos":
+      return <EventosExternosManagement />;
       default:
         return <Dashboard />;
     }
