@@ -724,8 +724,8 @@ def process_baja_evento(message):
     """Procesa mensajes del topic baja-evento-solidario"""
     try:
         data = message.value
-        org_id = data.get('id_organizacion')
-        evento_id = data.get('id_evento')
+        org_id = data.get('idOrganizacion') or data.get('id_organizacion')
+        evento_id = data.get('idEvento') or data.get('id_evento')
         
         logger.info(f"Baja de evento de {org_id}: {evento_id}")
 
@@ -794,6 +794,70 @@ def process_transferencia_donaciones(message):
     except Exception as e:
         logger.error(f"Error procesando transferencia: {e}")
 
+def process_adhesion_evento(message):
+    """Procesa mensajes del topic adhesion-evento-{id_organizacion}"""
+    try:
+        data = message.value
+        id_evento = data.get('idEvento') or data.get('id_evento')
+        id_organizacion = data.get('idOrganizacion') or data.get('id_organizacion')
+        id_voluntario = data.get('idVoluntario') or data.get('id_voluntario')
+        nombre = data.get('nombre')
+        apellido = data.get('apellido')
+        email = data.get('email')
+        telefono = data.get('telefono')
+        
+        logger.info(f"Adhesión al evento {id_evento} de {nombre} {apellido} (org: {id_organizacion})")
+        
+        connection = get_db_connection()
+        if not connection:
+            logger.error("No se pudo conectar a la BD para procesar adhesión")
+            return
+            
+        try:
+            cursor = connection.cursor(dictionary=True)
+            
+            # Buscar el evento externo por id_evento
+            query_evento = """
+                SELECT id FROM eventos_externos 
+                WHERE id_evento = %s AND activo = TRUE
+                LIMIT 1
+            """
+            cursor.execute(query_evento, (id_evento,))
+            evento = cursor.fetchone()
+            
+            if not evento:
+                logger.warning(f"Evento {id_evento} no encontrado o inactivo")
+                return
+            
+            id_evento_interno = evento['id']
+            
+            # Guardar la adhesión
+            query = """
+                INSERT INTO adhesiones_eventos 
+                (id_evento_externo, id_voluntario, activa)
+                VALUES (%s, %s, TRUE)
+                ON DUPLICATE KEY UPDATE 
+                    activa = TRUE,
+                    fecha_adhesion = CURRENT_TIMESTAMP
+            """
+            
+            cursor.execute(query, (id_evento_interno, id_voluntario))
+            connection.commit()
+            
+            logger.info(f"Adhesión guardada: evento {id_evento} (interno: {id_evento_interno}), voluntario {id_voluntario}")
+            
+        except Error as e:
+            logger.error(f"Error guardando adhesión: {e}")
+            if connection:
+                connection.rollback()
+        finally:
+            if connection and connection.is_connected():
+                cursor.close()
+                connection.close()
+        
+    except Exception as e:
+        logger.error(f"Error procesando adhesión: {e}")
+
 def start_kafka_consumers():
     """Inicia los consumidores de Kafka en hilos separados"""
     
@@ -830,6 +894,8 @@ def start_kafka_consumers():
         (["baja-evento-solidario"], process_baja_evento, "baja_eventos", None),
         # Pattern para capturar todos los topics de transferencias (transferencia-donaciones-*)
         (None, process_transferencia_donaciones, "transferencias", r'^transferencia-donaciones-.*'),
+        # Pattern para capturar todos los topics de adhesiones (adhesion-evento-*)
+        (None, process_adhesion_evento, "adhesiones", r'^adhesion-evento-.*'),
     ]
     
     for topics, processor, group_suffix, pattern in consumers:

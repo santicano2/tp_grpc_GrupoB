@@ -231,8 +231,8 @@ const EventosExternosManagement = () => {
   const abrirModalAdherirse = (evento) => {
     setEventoSeleccionado(evento);
     setFormAdhesion({
-      idOrganizacion: "",
-      idVoluntario: "",
+      idOrganizacion: user?.id_organizacion || "",
+      idVoluntario: user?.id || "",
       nombre: user?.name || "",
       apellido: user?.lastName || "",
       telefono: "",
@@ -249,6 +249,13 @@ const EventosExternosManagement = () => {
       !formAdhesion.apellido ||
       !formAdhesion.email
     ) {
+      console.error("Validación falló:", {
+        idOrganizacion: formAdhesion.idOrganizacion,
+        idVoluntario: formAdhesion.idVoluntario,
+        nombre: formAdhesion.nombre,
+        apellido: formAdhesion.apellido,
+        email: formAdhesion.email,
+      });
       setError("Complete todos los campos obligatorios");
       return;
     }
@@ -426,7 +433,8 @@ const EventosExternosManagement = () => {
                       </TableData>
                       <TableData>
                         <div className="text-sm">
-                          Org. {evento.idOrganizacion}
+                          {evento.nombreOrganizacion ||
+                            `Org. ${evento.idOrganizacion}`}
                         </div>
                       </TableData>
                       <TableData>
@@ -436,7 +444,9 @@ const EventosExternosManagement = () => {
                       </TableData>
                       <TableData>
                         <div className="text-sm">
-                          {formatearFecha(evento.fechaHora)}
+                          {formatearFecha(
+                            evento.fechaEvento || evento.fechaHora
+                          )}
                         </div>
                       </TableData>
                       <TableData>
