@@ -1,7 +1,10 @@
 package com.example.api.Controller;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -10,7 +13,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.api.dto.AdhesionEventoDTO;
 import com.example.api.dto.BajaEventoDTO;
+import com.example.api.dto.EventDTO;
 import com.example.api.dto.PublicarEventoDTO;
+import com.example.api.service.EventoKafkaConsumerService;
 import com.example.api.service.EventoKafkaProducerService;
 
 @RestController
@@ -19,6 +24,9 @@ public class EventoControllerKafka {
 
     @Autowired
     private EventoKafkaProducerService eventoKafkaProducerService;
+
+    @Autowired
+    private EventoKafkaConsumerService eventoKafkaConsumerService;
 
     // Publicar evento solidario
     @PostMapping("/publicar")
@@ -51,5 +59,17 @@ public class EventoControllerKafka {
         }
         eventoKafkaProducerService.adherirEvento(idOrganizador, adhesion);
         return ResponseEntity.ok("Adhesión enviada correctamente al organizador " + idOrganizador);
+    }
+
+    // Listar eventos externos
+    @GetMapping("/externos")
+    public List<EventDTO> listarEventosExternos() {
+        return eventoKafkaConsumerService.getEventosExternos();
+    }
+
+    // Listar adhesiones recibidas
+    @GetMapping("/adhesiones")
+    public List<AdhesionEventoDTO> listarAdhesiones() {
+        return eventoKafkaConsumerService.getAdhesiones();
     }
 }

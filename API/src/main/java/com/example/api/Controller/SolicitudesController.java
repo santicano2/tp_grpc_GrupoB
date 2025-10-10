@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.example.api.dto.TransferenciaDonacionDTO;
 import com.example.api.service.BajaSolicitudKafkaProducerService;
 import com.example.api.service.OfertaKafkaProducerService;
+import com.example.api.service.OfertaKafkaConsumerService;
 import com.example.api.service.TransferenciaKafkaConsumerService;
 import com.example.api.service.TransferenciaKafkaProducerService;
 
@@ -34,6 +35,9 @@ public class SolicitudesController {
     @Autowired
     private OfertaKafkaProducerService ofertaKafkaProducerService;
 
+    @Autowired
+    private OfertaKafkaConsumerService ofertaKafkaConsumerService;
+
     // Endpoint para crear una oferta de donaciones
     @PostMapping("/ofertas/crear")
     public org.springframework.http.ResponseEntity<String> crearOferta(@RequestBody OfertaDonacionDTO oferta) {
@@ -42,6 +46,12 @@ public class SolicitudesController {
         }
         ofertaKafkaProducerService.enviarOferta(oferta);
         return org.springframework.http.ResponseEntity.ok("Oferta publicada correctamente");
+    }
+
+    // Endpoint para listar ofertas externas
+    @GetMapping("/ofertas/externas")
+    public List<OfertaDonacionDTO> listarOfertasExternas() {
+        return ofertaKafkaConsumerService.getOfertasExternas();
     }
 
     @Autowired

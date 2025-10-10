@@ -27,7 +27,7 @@ services:
     environment:
       PMA_HOST: mysql
       PMA_USER: empuje_user
-      PMA_PASSWORD: empuje_password
+      PMA_PASSWORD: 1234
     ports:
       - "8081:80"
     depends_on:
@@ -75,7 +75,7 @@ services:
       DB_HOST: mysql
       DB_PORT: 3306
       DB_USER: empuje_user
-      DB_PASSWORD: empuje_password
+      DB_PASSWORD: 1234
       DB_NAME: empuje_comunitario
     ports:
       - "50051:50051"
@@ -93,7 +93,7 @@ services:
       DB_HOST: mysql
       DB_PORT: 3306
       DB_USER: empuje_user
-      DB_PASSWORD: empuje_password
+      DB_PASSWORD: 1234
       DB_NAME: empuje_comunitario
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       ORGANIZATION_ID: org-empuje-001

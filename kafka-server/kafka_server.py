@@ -11,6 +11,7 @@ from typing import Dict, List, Any
 
 import uvicorn
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import mysql.connector
 from mysql.connector import Error
@@ -25,6 +26,15 @@ logger = logging.getLogger(__name__)
 
 # configuracion de la aplicacion
 app = FastAPI(title="Kafka Server - ONG Empuje Comunitario", version="1.0.0")
+
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:3000"],  # Frontend
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # configuracion de base de datos
 DB_CONFIG = {
@@ -75,9 +85,13 @@ def save_external_donation_request(data):
             
         cursor = connection.cursor()
         
-        org_id = data.get('id_organizacion_solicitante')
-        solicitud_id = data.get('id_solicitud')
-        donaciones = data.get('donaciones', [])
+        org_id = data.get('idOrganizacion') or data.get('id_organizacion_solicitante')
+        solicitud_id = data.get('idSolicitud') or data.get('id_solicitud')
+        categoria = data.get('categoria')
+        descripcion = data.get('descripcion')
+        
+        # El mensaje puede venir como un solo objeto o con lista de donaciones
+        donaciones = data.get('donaciones', [data] if categoria else [])
         
         for donacion in donaciones:
             query = """
@@ -90,11 +104,14 @@ def save_external_donation_request(data):
                 fecha_solicitud = CURRENT_TIMESTAMP
             """
             
+            cat = donacion.get('categoria') if isinstance(donacion, dict) else categoria
+            desc = donacion.get('descripcion') if isinstance(donacion, dict) else descripcion
+            
             cursor.execute(query, (
                 solicitud_id,
                 org_id,
-                donacion.get('categoria'),
-                donacion.get('descripcion'),
+                cat,
+                desc,
                 True
             ))
         
@@ -121,8 +138,8 @@ def save_external_donation_offer(data):
             
         cursor = connection.cursor()
         
-        org_id = data.get('id_organizacion_donante')
-        oferta_id = data.get('id_oferta')
+        org_id = data.get('idOrganizacionDonante') or data.get('id_organizacion_donante')
+        oferta_id = data.get('idOferta') or data.get('id_oferta')
         donaciones = data.get('donaciones', [])
         
         for donacion in donaciones:
@@ -159,7 +176,6 @@ def save_external_donation_offer(data):
         if connection and connection.is_connected():
             cursor.close()
             connection.close()
-
 def save_external_event(data):
     """Guarda un evento solidario externo en la BD"""
     try:
@@ -168,6 +184,12 @@ def save_external_event(data):
             return False
             
         cursor = connection.cursor()
+        
+        evento_id = data.get('idEvento') or data.get('id_evento')
+        org_id = data.get('idOrganizacion') or data.get('id_organizacion')
+        nombre = data.get('nombre')
+        descripcion = data.get('descripcion')
+        fecha_hora_str = data.get('fechaHora') or data.get('fecha_hora')
         
         query = """
             INSERT INTO eventos_externos 
@@ -181,19 +203,24 @@ def save_external_event(data):
             fecha_publicacion = CURRENT_TIMESTAMP
         """
         
-        fecha_evento = datetime.fromisoformat(data.get('fecha_hora').replace('Z', '+00:00'))
+        # Parsear fecha/hora
+        try:
+            fecha_evento = datetime.fromisoformat(fecha_hora_str.replace('Z', '+00:00'))
+        except:
+            # Si falla, usar la fecha como string o fecha actual
+            fecha_evento = fecha_hora_str if fecha_hora_str else datetime.now()
         
         cursor.execute(query, (
-            data.get('id_evento'),
-            data.get('id_organizacion'),
-            data.get('nombre'),
-            data.get('descripcion'),
+            evento_id,
+            org_id,
+            nombre,
+            descripcion,
             fecha_evento,
             True
         ))
         
         connection.commit()
-        logger.info(f"Evento externo guardado: {data.get('id_organizacion')}/{data.get('id_evento')}")
+        logger.info(f"Evento externo guardado: {org_id}/{evento_id}")
         return True
         
     except Error as e:
@@ -399,9 +426,34 @@ async def get_solicitudes_externas():
         """
         
         cursor.execute(query)
-        solicitudes = cursor.fetchall()
+        solicitudes_db = cursor.fetchall()
         
-        return {"solicitudes": solicitudes}
+        # Agrupar por id_solicitud (pueden haber múltiples donaciones por solicitud)
+        solicitudes_agrupadas = {}
+        for sol in solicitudes_db:
+            id_sol = str(sol.get("id_solicitud"))
+            
+            if id_sol not in solicitudes_agrupadas:
+                solicitudes_agrupadas[id_sol] = {
+                    "id": sol.get("id"),
+                    "idSolicitud": id_sol,
+                    "idOrganizacion": sol.get("id_organizacion_solicitante"),
+                    "activa": sol.get("activa"),
+                    "fechaSolicitud": sol.get("fecha_solicitud").isoformat() if sol.get("fecha_solicitud") else None,
+                    "nombreOrganizacion": sol.get("nombre_organizacion"),
+                    "donaciones": []
+                }
+            
+            # Agregar donación al array
+            solicitudes_agrupadas[id_sol]["donaciones"].append({
+                "categoria": sol.get("categoria"),
+                "descripcion": sol.get("descripcion")
+            })
+        
+        # Convertir el dict a lista
+        solicitudes_formateadas = list(solicitudes_agrupadas.values())
+        
+        return {"solicitudes": solicitudes_formateadas}
         
     except Exception as e:
         logger.error(f"Error obteniendo solicitudes externas: {e}")
@@ -413,7 +465,7 @@ async def get_solicitudes_externas():
 
 @app.get("/ofertas-externas")
 async def get_ofertas_externas():
-    """Obtiene las ofertas de donaciones de otras organizaciones"""
+    """Obtiene las ofertas de donaciones de otras organizaciones (agrupadas por oferta con sus donaciones)"""
     try:
         connection = get_db_connection()
         if not connection:
@@ -421,18 +473,53 @@ async def get_ofertas_externas():
             
         cursor = connection.cursor(dictionary=True)
         
+        # Consulta que trae ofertas con sus donaciones
         query = """
-            SELECT o.*, org.nombre as nombre_organizacion
+            SELECT 
+                o.id_oferta,
+                o.id_organizacion_donante,
+                org.nombre as nombre_organizacion,
+                od.categoria,
+                od.descripcion as descripcion_donacion,
+                od.cantidad,
+                o.fecha_oferta,
+                o.activa
             FROM ofertas_externas o
             LEFT JOIN organizaciones org ON o.id_organizacion_donante = org.id_organizacion
+            LEFT JOIN donaciones_oferta od ON o.id_oferta = od.id_oferta
             WHERE o.activa = TRUE
-            ORDER BY o.fecha_oferta DESC
+            ORDER BY o.fecha_oferta DESC, od.categoria
         """
         
         cursor.execute(query)
-        ofertas = cursor.fetchall()
+        rows = cursor.fetchall()
         
-        return {"ofertas": ofertas}
+        # Agrupar por oferta y crear array de donaciones
+        ofertas_dict = {}
+        for row in rows:
+            oferta_id = row['id_oferta']
+            
+            if oferta_id not in ofertas_dict:
+                ofertas_dict[oferta_id] = {
+                    'idOferta': str(oferta_id),
+                    'idOrganizacion': row['id_organizacion_donante'],
+                    'nombreOrganizacion': row['nombre_organizacion'],
+                    'fechaOferta': row['fecha_oferta'].isoformat() if row['fecha_oferta'] else None,
+                    'activa': bool(row['activa']),
+                    'donaciones': []
+                }
+            
+            # Agregar donacion si existe
+            if row['categoria']:
+                ofertas_dict[oferta_id]['donaciones'].append({
+                    'categoria': row['categoria'],
+                    'descripcion': row['descripcion_donacion'],
+                    'cantidad': row['cantidad']
+                })
+        
+        ofertas_list = list(ofertas_dict.values())
+        
+        return {"ofertas": ofertas_list}
         
     except Exception as e:
         logger.error(f"Error obteniendo ofertas externas: {e}")
@@ -461,9 +548,23 @@ async def get_eventos_externos():
         """
         
         cursor.execute(query)
-        eventos = cursor.fetchall()
+        rows = cursor.fetchall()
         
-        return {"eventos": eventos}
+        # Transformar a camelCase para el frontend
+        eventos_list = []
+        for row in rows:
+            eventos_list.append({
+                'idEvento': str(row['id_evento']),
+                'idOrganizacion': row['id_organizacion'],
+                'nombreOrganizacion': row['nombre_organizacion'],
+                'titulo': row['titulo'],
+                'descripcion': row['descripcion'],
+                'fechaEvento': row['fecha_evento'].isoformat() if row['fecha_evento'] else None,
+                'lugar': row['lugar'],
+                'activo': bool(row['activo'])
+            })
+        
+        return {"eventos": eventos_list}
         
     except Exception as e:
         logger.error(f"Error obteniendo eventos externos: {e}")
@@ -479,7 +580,7 @@ def process_solicitud_donaciones(message):
     """Procesa mensajes del topic solicitud-donaciones"""
     try:
         data = message.value
-        org_id = data.get('id_organizacion_solicitante')
+        org_id = data.get('idOrganizacion') or data.get('id_organizacion_solicitante')
         
         # no procesar nuestros propios mensajes
         if org_id == ORGANIZATION_ID:
@@ -497,7 +598,7 @@ def process_oferta_donaciones(message):
     """Procesa mensajes del topic oferta-donaciones"""
     try:
         data = message.value
-        org_id = data.get('id_organizacion_donante')
+        org_id = data.get('idOrganizacionDonante') or data.get('id_organizacion_donante')
         
         # no procesar nuestros propios mensajes
         if org_id == ORGANIZATION_ID:
@@ -515,7 +616,7 @@ def process_eventos_solidarios(message):
     """Procesa mensajes del topic eventos-solidarios"""
     try:
         data = message.value
-        org_id = data.get('id_organizacion')
+        org_id = data.get('idOrganizacion') or data.get('id_organizacion')
         
         # no procesar nuestros propios mensajes
         if org_id == ORGANIZATION_ID:
@@ -533,8 +634,8 @@ def process_baja_solicitud(message):
     """Procesa mensajes del topic baja-solicitud-donaciones"""
     try:
         data = message.value
-        org_id = data.get('id_organizacion_solicitante')
-        solicitud_id = data.get('id_solicitud')
+        org_id = data.get('idOrganizacionSolicitante') or data.get('id_organizacion_solicitante')
+        solicitud_id = data.get('idSolicitud') or data.get('id_solicitud')
         
         logger.info(f"Baja de solicitud de {org_id}: {solicitud_id}")
 

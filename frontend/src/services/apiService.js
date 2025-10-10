@@ -286,6 +286,156 @@ class ApiService {
   async getDashboardStats() {
     return this.request("/dashboard/stats");
   }
+
+  // ======== SOLICITUDES DE DONACIONES (KAFKA) ========
+
+  /**
+   * Listar solicitudes externas de otras ONGs
+   * @returns {Promise<Array>} Lista de solicitudes externas
+   */
+  async getSolicitudesExternas() {
+    return this.request("/api/solicitudes/externas");
+  }
+
+  /**
+   * Crear nueva solicitud de donación
+   * @param {Object} solicitudData - Datos de la solicitud
+   * @returns {Promise<Object>} Respuesta de la creación
+   */
+  async crearSolicitud(solicitudData) {
+    return this.request("/api/solicitudes/crear", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(solicitudData),
+    });
+  }
+
+  /**
+   * Dar de baja una solicitud de donación
+   * @param {Object} bajaData - Datos de la baja
+   * @returns {Promise<Object>} Respuesta de la baja
+   */
+  async bajaSolicitud(bajaData) {
+    return this.request("/api/solicitudes/baja", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(bajaData),
+    });
+  }
+
+  /**
+   * Listar ofertas externas de otras ONGs
+   * @returns {Promise<Array>} Lista de ofertas externas
+   */
+  async getOfertasExternas() {
+    return this.request("/api/solicitudes/ofertas/externas");
+  }
+
+  /**
+   * Crear nueva oferta de donación
+   * @param {Object} ofertaData - Datos de la oferta
+   * @returns {Promise<Object>} Respuesta de la creación
+   */
+  async crearOferta(ofertaData) {
+    return this.request("/api/solicitudes/ofertas/crear", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(ofertaData),
+    });
+  }
+
+  /**
+   * Realizar transferencia de donaciones
+   * @param {Object} transferenciaData - Datos de la transferencia
+   * @returns {Promise<Object>} Respuesta de la transferencia
+   */
+  async transferirDonaciones(transferenciaData) {
+    return this.request("/api/solicitudes/transferencias/realizar", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(transferenciaData),
+    });
+  }
+
+  /**
+   * Ver transferencias recibidas
+   * @returns {Promise<Array>} Lista de transferencias recibidas
+   */
+  async getTransferenciasRecibidas() {
+    return this.request("/api/solicitudes/transferencias/recibidas");
+  }
+
+  // ======== EVENTOS EXTERNOS (KAFKA) ========
+
+  /**
+   * Listar eventos externos de otras ONGs
+   * @returns {Promise<Array>} Lista de eventos externos
+   */
+  async getEventosExternos() {
+    return this.request("/api/eventos-kafka/externos");
+  }
+
+  /**
+   * Publicar nuevo evento solidario
+   * @param {Object} eventoData - Datos del evento
+   * @returns {Promise<Object>} Respuesta de la publicación
+   */
+  async publicarEvento(eventoData) {
+    return this.request("/api/eventos-kafka/publicar", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(eventoData),
+    });
+  }
+
+  /**
+   * Dar de baja un evento solidario
+   * @param {Object} bajaData - Datos de la baja
+   * @returns {Promise<Object>} Respuesta de la baja
+   */
+  async bajaEvento(bajaData) {
+    return this.request("/api/eventos-kafka/baja", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(bajaData),
+    });
+  }
+
+  /**
+   * Adherirse a un evento externo
+   * @param {string} idOrganizador - ID del organizador del evento
+   * @param {Object} adhesionData - Datos de la adhesión
+   * @returns {Promise<Object>} Respuesta de la adhesión
+   */
+  async adherirEvento(idOrganizador, adhesionData) {
+    return this.request(`/api/eventos-kafka/adherir-evento/${idOrganizador}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(adhesionData),
+    });
+  }
+
+  /**
+   * Ver adhesiones recibidas
+   * @returns {Promise<Array>} Lista de adhesiones recibidas
+   */
+  async getAdhesionesRecibidas() {
+    return this.request("/api/eventos-kafka/adhesiones");
+  }
 }
 
 const apiService = new ApiService();
