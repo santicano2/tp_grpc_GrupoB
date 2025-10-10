@@ -4,6 +4,7 @@ import java.util.List;
 
 public class TransferenciaDonacionDTO {
     private Long idSolicitud;
+    private Long idOrganizacionSolicitante;
     private Long idOrganizacionDonante;
     private List<DonacionItem> donaciones;
 
@@ -22,6 +23,8 @@ public class TransferenciaDonacionDTO {
 
     public Long getIdSolicitud() { return idSolicitud; }
     public void setIdSolicitud(Long idSolicitud) { this.idSolicitud = idSolicitud; }
+    public Long getIdOrganizacionSolicitante() { return idOrganizacionSolicitante; }
+    public void setIdOrganizacionSolicitante(Long idOrganizacionSolicitante) { this.idOrganizacionSolicitante = idOrganizacionSolicitante; }
     public Long getIdOrganizacionDonante() { return idOrganizacionDonante; }
     public void setIdOrganizacionDonante(Long idOrganizacionDonante) { this.idOrganizacionDonante = idOrganizacionDonante; }
     public List<DonacionItem> getDonaciones() { return donaciones; }

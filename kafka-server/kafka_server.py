@@ -5,6 +5,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 import threading
 from datetime import datetime
 from typing import Dict, List, Any
@@ -583,6 +584,71 @@ async def get_eventos_externos():
             cursor.close()
             connection.close()
 
+@app.get("/transferencias-recibidas")
+async def get_transferencias_recibidas():
+    """Obtiene las transferencias de donaciones recibidas (agrupadas por solicitud)"""
+    try:
+        connection = get_db_connection()
+        if not connection:
+            raise HTTPException(status_code=500, detail="Error de conexion a BD")
+            
+        cursor = connection.cursor(dictionary=True)
+        
+        query = """
+            SELECT 
+                t.id_solicitud,
+                t.id_organizacion_solicitante,
+                t.id_organizacion_donante,
+                COALESCE(org1.nombre, org2.nombre) as nombre_org_donante,
+                t.categoria,
+                t.descripcion,
+                t.cantidad,
+                t.fecha_transferencia,
+                t.tipo_transferencia
+            FROM transferencias_donaciones t
+            LEFT JOIN organizaciones org1 ON t.id_organizacion_donante = org1.id_organizacion
+            LEFT JOIN organizaciones org2 ON t.id_organizacion_donante = org2.id
+            WHERE t.tipo_transferencia = 'ENVIADA'
+            ORDER BY t.fecha_transferencia DESC, t.id_solicitud
+        """
+        
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        
+        # Agrupar por solicitud
+        transferencias_dict = {}
+        for row in rows:
+            solicitud_id = str(row['id_solicitud'])
+            
+            if solicitud_id not in transferencias_dict:
+                transferencias_dict[solicitud_id] = {
+                    'idSolicitud': solicitud_id,
+                    'idOrganizacionSolicitante': row['id_organizacion_solicitante'],
+                    'idOrganizacionDonante': row['id_organizacion_donante'],
+                    'nombreOrganizacionDonante': row['nombre_org_donante'],
+                    'fechaTransferencia': row['fecha_transferencia'].isoformat() if row['fecha_transferencia'] else None,
+                    'donaciones': []
+                }
+            
+            # Agregar donacion
+            transferencias_dict[solicitud_id]['donaciones'].append({
+                'categoria': row['categoria'],
+                'descripcion': row['descripcion'],
+                'cantidad': row['cantidad']
+            })
+        
+        transferencias_list = list(transferencias_dict.values())
+        
+        return {"transferencias": transferencias_list}
+        
+    except Exception as e:
+        logger.error(f"Error obteniendo transferencias recibidas: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if connection and connection.is_connected():
+            cursor.close()
+            connection.close()
+
 # =================== CONSUMIDORES KAFKA ===================
 
 def process_solicitud_donaciones(message):
@@ -669,39 +735,107 @@ def process_baja_evento(message):
     except Exception as e:
         logger.error(f"Error procesando baja de evento: {e}")
 
+def process_transferencia_donaciones(message):
+    """Procesa mensajes del topic transferencia-donaciones-{id_solicitud}"""
+    try:
+        data = message.value
+        id_solicitud = data.get('idSolicitud') or data.get('id_solicitud')
+        id_org_solicitante = data.get('idOrganizacionSolicitante') or data.get('id_organizacion_solicitante')
+        id_org_donante = data.get('idOrganizacionDonante') or data.get('id_organizacion_donante')
+        donaciones = data.get('donaciones', [])
+        
+        logger.info(f"Transferencia para solicitud {id_solicitud} de {id_org_donante} a {id_org_solicitante}")
+        
+        # Guardar cada donacion como una transferencia
+        connection = get_db_connection()
+        if not connection:
+            logger.error("No se pudo conectar a la BD para guardar transferencia")
+            return
+            
+        try:
+            cursor = connection.cursor()
+            
+            for donacion in donaciones:
+                # Extraer cantidad
+                import re
+                cantidad_str = str(donacion.get('cantidad', '0'))
+                cantidad_match = re.match(r'(\d+)', cantidad_str)
+                cantidad = int(cantidad_match.group(1)) if cantidad_match else 0
+                
+                query = """
+                    INSERT INTO transferencias_donaciones 
+                    (id_solicitud, id_organizacion_solicitante, id_organizacion_donante, 
+                     categoria, descripcion, cantidad, tipo_transferencia)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """
+                
+                cursor.execute(query, (
+                    id_solicitud,
+                    id_org_solicitante,
+                    id_org_donante,
+                    donacion.get('categoria'),
+                    donacion.get('descripcion'),
+                    cantidad,
+                    'ENVIADA'
+                ))
+            
+            connection.commit()
+            logger.info(f"Transferencia guardada: {len(donaciones)} donaciones")
+            
+        except Error as e:
+            logger.error(f"Error guardando transferencia: {e}")
+            if connection:
+                connection.rollback()
+        finally:
+            if connection and connection.is_connected():
+                cursor.close()
+                connection.close()
+        
+    except Exception as e:
+        logger.error(f"Error procesando transferencia: {e}")
+
 def start_kafka_consumers():
     """Inicia los consumidores de Kafka en hilos separados"""
     
-    def consume_topic(topics, processor, group_suffix=""):
-        """Función generica para consumir un topic"""
+    def consume_topic(topics=None, processor=None, group_suffix="", topic_pattern=None):
+        """Función generica para consumir un topic o patrón"""
         try:
-            consumer = kafka_manager.get_consumer(
-                topics=topics,
-                group_id=f"empuje_{ORGANIZATION_ID}_{group_suffix}"
-            )
-            
-            logger.info(f"Consumidor iniciado para topics: {topics}")
+            if topic_pattern:
+                consumer = kafka_manager.get_consumer(
+                    topic_pattern=topic_pattern,
+                    group_id=f"empuje_{ORGANIZATION_ID}_{group_suffix}"
+                )
+                logger.info(f"Consumidor iniciado para patrón: {topic_pattern}")
+            else:
+                consumer = kafka_manager.get_consumer(
+                    topics=topics,
+                    group_id=f"empuje_{ORGANIZATION_ID}_{group_suffix}"
+                )
+                logger.info(f"Consumidor iniciado para topics: {topics}")
             
             for message in consumer:
                 if message.value:
                     processor(message)
                     
         except Exception as e:
-            logger.error(f"Error en consumidor {topics}: {e}")
+            logger.error(f"Error en consumidor: {e}")
     
     # iniciar consumidores en hilos separados
+    # (topics, processor, group_suffix, topic_pattern)
     consumers = [
-        (["solicitud-donaciones"], process_solicitud_donaciones, "solicitudes"),
-        (["oferta-donaciones"], process_oferta_donaciones, "ofertas"),
-        (["eventos-solidarios"], process_eventos_solidarios, "eventos"),
-        (["baja-solicitud-donaciones"], process_baja_solicitud, "baja_solicitudes"),
-        (["baja-evento-solidario"], process_baja_evento, "baja_eventos"),
+        (["solicitud-donaciones"], process_solicitud_donaciones, "solicitudes", None),
+        (["oferta-donaciones"], process_oferta_donaciones, "ofertas", None),
+        (["eventos-solidarios"], process_eventos_solidarios, "eventos", None),
+        (["baja-solicitud-donaciones"], process_baja_solicitud, "baja_solicitudes", None),
+        (["baja-evento-solidario"], process_baja_evento, "baja_eventos", None),
+        # Pattern para capturar todos los topics de transferencias (transferencia-donaciones-*)
+        (None, process_transferencia_donaciones, "transferencias", r'^transferencia-donaciones-.*'),
     ]
     
-    for topics, processor, group_suffix in consumers:
+    for topics, processor, group_suffix, pattern in consumers:
         thread = threading.Thread(
             target=consume_topic,
-            args=(topics, processor, group_suffix),
+            args=(topics, processor, group_suffix, pattern),
             daemon=True
         )
         thread.start()

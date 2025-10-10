@@ -136,11 +136,11 @@ const SolicitudesManagement = () => {
     setError(null);
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/solicitudes/transferencias/recibidas`
+        "http://localhost:8090/transferencias-recibidas"
       );
       if (response.ok) {
         const data = await response.json();
-        setTransferenciasRecibidas(data);
+        setTransferenciasRecibidas(data.transferencias || []);
       } else {
         throw new Error("Error al cargar transferencias");
       }
@@ -353,9 +353,14 @@ const SolicitudesManagement = () => {
 
   const abrirModalTransferir = (solicitud) => {
     setSolicitudSeleccionada(solicitud);
+    // Pre-llenar el formulario con las donaciones de la solicitud
     setFormTransferencia({
-      idOrganizacionDonante: "",
-      donaciones: [{ categoria: "", descripcion: "", cantidad: "" }],
+      idOrganizacionDonante: user.id_organizacion || "",
+      donaciones: solicitud.donaciones.map((d) => ({
+        categoria: d.categoria,
+        descripcion: d.descripcion,
+        cantidad: "",
+      })),
     });
     setModalTransferir(true);
   };
@@ -408,6 +413,7 @@ const SolicitudesManagement = () => {
     try {
       const transferencia = {
         idSolicitud: solicitudSeleccionada.idSolicitud,
+        idOrganizacionSolicitante: solicitudSeleccionada.idOrganizacion,
         idOrganizacionDonante: parseInt(
           formTransferencia.idOrganizacionDonante
         ),
@@ -679,10 +685,47 @@ const SolicitudesManagement = () => {
                 No hay transferencias recibidas
               </div>
             ) : (
-              <div className="p-6 space-y-3">
+              <div className="p-6 space-y-4">
                 {transferenciasRecibidas.map((transferencia, idx) => (
-                  <div key={idx} className="bg-gray-50 p-4 rounded border">
-                    <pre className="text-sm overflow-auto">{transferencia}</pre>
+                  <div
+                    key={idx}
+                    className="bg-gray-50 p-4 rounded border border-gray-200"
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <div className="font-medium text-gray-900">
+                          Solicitud #{transferencia.idSolicitud}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          De:{" "}
+                          {transferencia.nombreOrganizacionDonante ||
+                            `Org. ${transferencia.idOrganizacionDonante}`}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {new Date(
+                            transferencia.fechaTransferencia
+                          ).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <div className="text-sm font-medium text-gray-700 mb-1">
+                        Donaciones:
+                      </div>
+                      <div className="space-y-1">
+                        {transferencia.donaciones.map((donacion, dIdx) => (
+                          <div
+                            key={dIdx}
+                            className="text-sm bg-white p-2 rounded"
+                          >
+                            <span className="font-medium">
+                              {donacion.categoria}:
+                            </span>{" "}
+                            {donacion.descripcion} ({donacion.cantidad})
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>

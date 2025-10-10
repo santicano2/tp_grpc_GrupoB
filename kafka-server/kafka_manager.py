@@ -131,22 +131,37 @@ class KafkaManager:
             logger.error(f"Error enviando mensaje a {topic}: {e}")
             return False
     
-    def get_consumer(self, topics: List[str], group_id: str = None) -> KafkaConsumer:
+    def get_consumer(self, topics: List[str] = None, group_id: str = None, topic_pattern: str = None):
         """
-        Crea un consumidor para escuchar topics especificos
+        Crea un consumidor para escuchar topics especificos o un patrón de topics
         """
         if group_id is None:
             group_id = f"empuje_{self.organization_id}"
         
-        consumer = KafkaConsumer(
-            *topics,
-            bootstrap_servers=self.bootstrap_servers.split(','),
-            group_id=group_id,
-            value_deserializer=lambda m: json.loads(m.decode('utf-8')) if m else None,
-            key_deserializer=lambda k: k.decode('utf-8') if k else None,
-            auto_offset_reset='latest',  # mensajes nuevos
-            enable_auto_commit=True
-        )
+        import re
+        
+        if topic_pattern:
+            # Consumidor con patrón regex
+            consumer = KafkaConsumer(
+                bootstrap_servers=self.bootstrap_servers.split(','),
+                group_id=group_id,
+                value_deserializer=lambda m: json.loads(m.decode('utf-8')) if m else None,
+                key_deserializer=lambda k: k.decode('utf-8') if k else None,
+                auto_offset_reset='latest',
+                enable_auto_commit=True
+            )
+            consumer.subscribe(pattern=re.compile(topic_pattern))
+        else:
+            # Consumidor con topics específicos
+            consumer = KafkaConsumer(
+                *topics,
+                bootstrap_servers=self.bootstrap_servers.split(','),
+                group_id=group_id,
+                value_deserializer=lambda m: json.loads(m.decode('utf-8')) if m else None,
+                key_deserializer=lambda k: k.decode('utf-8') if k else None,
+                auto_offset_reset='latest',
+                enable_auto_commit=True
+            )
         
         return consumer
     

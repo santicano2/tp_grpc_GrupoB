@@ -19,8 +19,8 @@ public class TransferenciaKafkaProducerService {
         this.kafkaTemplate = kafkaTemplate;
     }
 
-    public void enviarTransferencia(Long idOrgSolicitante, TransferenciaDonacionDTO transferencia) {
-        String topic = "transferencia-donaciones-" + idOrgSolicitante;
+    public void enviarTransferencia(Long idSolicitud, TransferenciaDonacionDTO transferencia) {
+        String topic = "transferencia-donaciones-" + idSolicitud;
         try {
             String json = objectMapper.writeValueAsString(transferencia);
             kafkaTemplate.send(topic, json);
