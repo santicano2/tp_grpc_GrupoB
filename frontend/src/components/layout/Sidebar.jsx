@@ -42,6 +42,12 @@ const Sidebar = ({ isOpen, onToggle, activeSection, onSectionChange }) => {
   icon: Globe,
   roles: ["PRESIDENTE", "VOCAL", "COORDINADOR", "VOLUNTARIO"],
 },
+{
+  id: "donation-report",
+  label: "Informe de Donaciones",
+  icon: Package,
+  roles: ["PRESIDENTE", "VOCAL"],
+},
   ];
 
   const filteredMenuItems = menuItems.filter(

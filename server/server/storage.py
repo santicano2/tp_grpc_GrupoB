@@ -1,3 +1,15 @@
+from typing import Any
+import json
+@dataclass
+class SavedFilter:
+    id: int
+    user_id: int
+    name: str
+    type: str  # 'DONACIONES' o 'EVENTOS'
+    filters_json: str
+    created_at: str
+    updated_at: str
+
 import logging
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
@@ -46,6 +58,46 @@ class Event:
     deleted: bool = False
 
 class DatabaseStorage:    
+
+    # ===== FILTROS GUARDADOS =====
+    def save_filter(self, user_id: int, name: str, tipo: str, filtros: Any) -> SavedFilter:
+        query = """
+            INSERT INTO filtros_guardados (usuario_id, nombre, tipo, filtros_json)
+            VALUES (%s, %s, %s, %s)
+        """
+        filtros_json = json.dumps(filtros)
+        filter_id = self.db.execute_insert(query, (user_id, name, tipo, filtros_json))
+        return self.get_filter_by_id(filter_id)
+
+    def get_filter_by_id(self, filter_id: int) -> SavedFilter | None:
+        query = "SELECT * FROM filtros_guardados WHERE id = %s"
+        results = self.db.execute_query(query, (filter_id,))
+        if results:
+            row = results[0]
+            return SavedFilter(
+                id=row['id'], user_id=row['usuario_id'], name=row['nombre'], type=row['tipo'],
+                filters_json=row['filtros_json'], created_at=str(row['fecha_creacion']), updated_at=str(row['fecha_modificacion'])
+            )
+        return None
+
+    def list_filters(self, user_id: int, tipo: str) -> list[SavedFilter]:
+        query = "SELECT * FROM filtros_guardados WHERE usuario_id = %s AND tipo = %s"
+        results = self.db.execute_query(query, (user_id, tipo))
+        return [SavedFilter(
+            id=row['id'], user_id=row['usuario_id'], name=row['nombre'], type=row['tipo'],
+            filters_json=row['filtros_json'], created_at=str(row['fecha_creacion']), updated_at=str(row['fecha_modificacion'])
+        ) for row in results]
+
+    def update_filter(self, filter_id: int, name: str, filtros: Any) -> SavedFilter | None:
+        filtros_json = json.dumps(filtros)
+        query = "UPDATE filtros_guardados SET nombre = %s, filtros_json = %s WHERE id = %s"
+        self.db.execute_update(query, (name, filtros_json, filter_id))
+        return self.get_filter_by_id(filter_id)
+
+    def delete_filter(self, filter_id: int) -> bool:
+        query = "DELETE FROM filtros_guardados WHERE id = %s"
+        self.db.execute_update(query, (filter_id,))
+        return True
     def __init__(self):
         self.db = db_manager
         self._user_cache = {}

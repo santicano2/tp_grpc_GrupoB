@@ -1,4 +1,22 @@
 services:
+  graphql-backend:
+    build: ./server
+    container_name: graphql_backend
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: empuje_user
+      DB_PASSWORD: 1234
+      DB_NAME: empuje_comunitario
+    command: uvicorn server.main_graphql:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./server:/app
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
   mysql:
     image: mysql:8.0
     container_name: empuje_mysql

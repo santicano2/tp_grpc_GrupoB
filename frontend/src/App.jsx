@@ -10,6 +10,7 @@ import InventoryManagement from "./components/inventory/InventoryManagement";
 import EventManagement from "./components/events/EventManagement";
 import SolicitudesManagement from "./components/solicitudes/SolicitudesManagement";
 import EventosExternosManagement from "./components/eventos-externos/EventosExternosManagement";
+import DonationReportViewer from "./components/reports/DonationReportViewer";
 import Sidebar from "./components/layout/Sidebar";
 
 
@@ -48,10 +49,12 @@ const AppContent = () => {
         return <InventoryManagement />;
       case "events":
         return <EventManagement />;
-        case "solicitudes": 
-      return <SolicitudesManagement />; 
+      case "solicitudes": 
+        return <SolicitudesManagement />; 
       case "eventos-externos":
-      return <EventosExternosManagement />;
+        return <EventosExternosManagement />;
+      case "donation-report":
+        return <DonationReportViewer actorUsername="presidente" />;
       default:
         return <Dashboard />;
     }
