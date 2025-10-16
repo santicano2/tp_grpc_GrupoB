@@ -25,7 +25,7 @@ services:
       MYSQL_ROOT_PASSWORD: 1234
       MYSQL_DATABASE: empuje_comunitario
       MYSQL_USER: empuje_user
-      MYSQL_PASSWORD: 1234
+      MYSQL_PASSWORD: empuje_password
     ports:
       - "3307:3306"
     volumes:
