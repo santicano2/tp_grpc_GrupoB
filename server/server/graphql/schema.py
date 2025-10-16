@@ -156,6 +156,30 @@ class Query:
             id=f.id, name=f.name, type=f.type, filters_json=f.filters_json,
             created_at=f.created_at, updated_at=f.updated_at
         ) for f in filters]
+
+    @strawberry.field
+    def donation_report(self, info, actor_username: str, filter: Optional[DonationReportFilter] = None) -> DonationReport:
+        # solo PRESIDENTE o VOCAL pueden ver el informe
+        user: User = db.find_user_by_login(actor_username)
+        if not user or not user.active or not can_manage_inventory(user.role):
+            raise Exception("No autorizado: solo PRESIDENTE o VOCAL pueden acceder al informe de donaciones.")
+        donations = list(db.donations.values())
+        if filter:
+            donations = filter_donations(donations, filter)
+        # Agrupar por categoria y eliminado
+        summary_dict = {}
+        for d in donations:
+            key = (d.category, d.deleted)
+            if key not in summary_dict:
+                summary_dict[key] = 0
+            summary_dict[key] += d.quantity
+        summary = [DonationSummary(category=k[0], deleted=k[1], total_quantity=v) for k, v in summary_dict.items()]
+        details = [DonationDetail(
+            id=d.id, category=d.category, description=d.description, quantity=d.quantity, deleted=d.deleted,
+            created_at=d.created_at, created_by=d.created_by, updated_at=d.updated_at, updated_by=d.updated_by
+        ) for d in donations]
+        return DonationReport(summary=summary, details=details)
+
 @strawberry.type
 class Mutation:
     @strawberry.mutation
@@ -186,29 +210,5 @@ class Mutation:
         if not user or not user.active:
             raise Exception("No autorizado")
         return db.delete_filter(filter_id)
-    hello: str = "Hello GraphQL!"
-
-    @strawberry.field
-    def donation_report(self, info, actor_username: str, filter: Optional[DonationReportFilter] = None) -> DonationReport:
-        # Autorización: solo PRESIDENTE o VOCAL pueden ver el informe
-        user: User = db.find_user_by_login(actor_username)
-        if not user or not user.active or not can_manage_inventory(user.role):
-            raise Exception("No autorizado: solo PRESIDENTE o VOCAL pueden acceder al informe de donaciones.")
-        donations = list(db.donations.values())
-        if filter:
-            donations = filter_donations(donations, filter)
-        # Agrupar por categoría y eliminado
-        summary_dict = {}
-        for d in donations:
-            key = (d.category, d.deleted)
-            if key not in summary_dict:
-                summary_dict[key] = 0
-            summary_dict[key] += d.quantity
-        summary = [DonationSummary(category=k[0], deleted=k[1], total_quantity=v) for k, v in summary_dict.items()]
-        details = [DonationDetail(
-            id=d.id, category=d.category, description=d.description, quantity=d.quantity, deleted=d.deleted,
-            created_at=d.created_at, created_by=d.created_by, updated_at=d.updated_at, updated_by=d.updated_by
-        ) for d in donations]
-        return DonationReport(summary=summary, details=details)
 
 schema = strawberry.Schema(query=Query, mutation=Mutation)

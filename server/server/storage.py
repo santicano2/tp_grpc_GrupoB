@@ -1,5 +1,18 @@
-from typing import Any
+import logging
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
+from datetime import datetime
 import json
+import bcrypt
+import secrets
+import string
+
+from .auth import Role
+from .utils import now_utc
+from .database import db_manager
+
+logger = logging.getLogger(__name__)
+
 @dataclass
 class SavedFilter:
     id: int
@@ -9,19 +22,6 @@ class SavedFilter:
     filters_json: str
     created_at: str
     updated_at: str
-
-import logging
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional
-from datetime import datetime
-from .auth import Role
-from .utils import now_utc
-from .database import db_manager
-import bcrypt
-import secrets
-import string
-
-logger = logging.getLogger(__name__)
 
 @dataclass
 class User:

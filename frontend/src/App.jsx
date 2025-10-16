@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Menu } from "lucide-react";
 
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { ApolloGraphQLProvider } from "./contexts/ApolloGraphQLProvider";
 
 import Login from "./components/auth/Login";
 import Dashboard from "./components/dashboard/Dashboard";
@@ -11,6 +12,7 @@ import EventManagement from "./components/events/EventManagement";
 import SolicitudesManagement from "./components/solicitudes/SolicitudesManagement";
 import EventosExternosManagement from "./components/eventos-externos/EventosExternosManagement";
 import DonationReportViewer from "./components/reports/DonationReportViewer";
+import EventsReportViewer from "./components/reports/EventsReportViewer";
 import Sidebar from "./components/layout/Sidebar";
 
 
@@ -54,7 +56,9 @@ const AppContent = () => {
       case "eventos-externos":
         return <EventosExternosManagement />;
       case "donation-report":
-        return <DonationReportViewer actorUsername="presidente" />;
+        return <DonationReportViewer />;
+      case "informe-eventos":
+        return <EventsReportViewer />;
       default:
         return <Dashboard />;
     }
@@ -100,7 +104,9 @@ const AppContent = () => {
 const App = () => {
   return (
     <AuthProvider>
-      <AppContent />
+      <ApolloGraphQLProvider>
+        <AppContent />
+      </ApolloGraphQLProvider>
     </AuthProvider>
   );
 };

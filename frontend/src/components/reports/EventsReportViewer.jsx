@@ -5,27 +5,23 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
-import { Filter, Save, Trash2, Edit2, AlertCircle, FileSpreadsheet } from 'lucide-react';
+import { Filter, Save, Trash2, Edit2, AlertCircle, Calendar } from 'lucide-react';
 
 // GraphQL Queries y Mutations
-const DONATION_REPORT = gql`
-  query DonationReport($actorUsername: String!, $filter: DonationReportFilter) {
-    donationReport(actorUsername: $actorUsername, filter: $filter) {
+const EVENT_PARTICIPATION_REPORT = gql`
+  query EventParticipationReport($actorUsername: String!, $filter: EventParticipationReportFilter) {
+    eventParticipationReport(actorUsername: $actorUsername, filter: $filter) {
       summary {
-        category
-        deleted
-        totalQuantity
+        year
+        month
+        totalEvents
+        totalParticipations
       }
       details {
-        id
-        category
-        description
-        quantity
-        deleted
-        createdAt
-        createdBy
-        updatedAt
-        updatedBy
+        eventId
+        eventName
+        user
+        participationDate
       }
     }
   }
@@ -71,15 +67,17 @@ const DELETE_FILTER = gql`
   }
 `;
 
-const CATEGORIES = ['ALIMENTOS', 'ROPA', 'JUGUETES', 'UTILES_ESCOLARES'];
+const MONTH_NAMES = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+];
 
-export default function DonationReportViewer() {
+export default function EventsReportViewer() {
   const { user } = useAuth();
   
   // Estados del formulario de filtros
   const [filters, setFilters] = useState({
-    category: '',
-    deleted: null,
+    user: user?.username || '',
     dateFrom: '',
     dateTo: ''
   });
@@ -92,13 +90,12 @@ export default function DonationReportViewer() {
 
   // GraphQL queries y mutations
   const { data: reportData, loading: reportLoading, error: reportError, refetch } = useQuery(
-    DONATION_REPORT,
+    EVENT_PARTICIPATION_REPORT,
     {
       variables: {
         actorUsername: user?.username,
         filter: {
-          category: filters.category || null,
-          deleted: filters.deleted,
+          user: filters.user || null,
           dateFrom: filters.dateFrom || null,
           dateTo: filters.dateTo || null
         }
@@ -112,7 +109,7 @@ export default function DonationReportViewer() {
     {
       variables: {
         actorUsername: user?.username,
-        tipo: 'DONACIONES'
+        tipo: 'EVENTOS'
       },
       skip: !user?.username
     }
@@ -152,15 +149,15 @@ export default function DonationReportViewer() {
     }
   });
 
-  // Verificar permisos (solo PRESIDENTE y VOCAL)
-  if (!user || (user.role !== 'PRESIDENTE' && user.role !== 'VOCAL')) {
+  // Verificar permisos
+  if (!user) {
     return (
       <div className="p-6">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-2 text-red-600">
               <AlertCircle className="h-5 w-5" />
-              <p>No tienes permisos para acceder a este informe. Solo PRESIDENTE y VOCAL pueden ver esta información.</p>
+              <p>Debes iniciar sesión para acceder a este informe.</p>
             </div>
           </CardContent>
         </Card>
@@ -168,18 +165,24 @@ export default function DonationReportViewer() {
     );
   }
 
+  const canViewAllUsers = user.role === 'PRESIDENTE' || user.role === 'COORDINADOR';
+
   const handleFilterChange = (field, value) => {
     setFilters(prev => ({ ...prev, [field]: value }));
   };
 
   const handleApplyFilter = () => {
+    // Validación: el usuario es obligatorio
+    if (!filters.user) {
+      alert('El campo Usuario es obligatorio');
+      return;
+    }
     refetch();
   };
 
   const handleClearFilters = () => {
     setFilters({
-      category: '',
-      deleted: null,
+      user: user?.username || '',
       dateFrom: '',
       dateTo: ''
     });
@@ -213,7 +216,7 @@ export default function DonationReportViewer() {
             name: filterName,
             filtersJson
           },
-          tipo: 'DONACIONES'
+          tipo: 'EVENTOS'
         }
       });
     }
@@ -245,51 +248,44 @@ export default function DonationReportViewer() {
     }
   };
 
-  const handleDownloadExcel = async () => {
-    try {
-      const queryParams = new URLSearchParams();
-      if (filters.category) queryParams.append('category', filters.category);
-      if (filters.deleted !== null) queryParams.append('deleted', filters.deleted);
-      if (filters.dateFrom) queryParams.append('date_from', filters.dateFrom);
-      if (filters.dateTo) queryParams.append('date_to', filters.dateTo);
-
-      const response = await fetch(`http://localhost:8000/informe-donaciones-excel?${queryParams.toString()}`);
-      
-      if (!response.ok) {
-        throw new Error('Error al generar el archivo Excel');
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `informe_donaciones_${new Date().toISOString().split('T')[0]}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (error) {
-      alert(`Error al descargar Excel: ${error.message}`);
-    }
-  };
-
   const formatDate = (dateString) => {
     if (!dateString) return '-';
     try {
-      return new Date(dateString).toLocaleString('es-AR');
+      return new Date(dateString).toLocaleString('es-AR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
     } catch {
       return dateString;
     }
   };
 
-  const summary = reportData?.donationReport?.summary || [];
-  const details = reportData?.donationReport?.details || [];
+  const formatMonthYear = (year, month) => {
+    return `${MONTH_NAMES[month - 1]} ${year}`;
+  };
+
+  const summary = reportData?.eventParticipationReport?.summary || [];
+  const details = reportData?.eventParticipationReport?.details || [];
   const savedFilters = savedFiltersData?.listSavedFilters || [];
+
+  // Agrupar detalles por mes para mostrar
+  const detailsByMonth = {};
+  details.forEach(detail => {
+    const date = new Date(detail.participationDate);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    if (!detailsByMonth[key]) {
+      detailsByMonth[key] = [];
+    }
+    detailsByMonth[key].push(detail);
+  });
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Informe de Donaciones</h1>
+        <h1 className="text-3xl font-bold">Informe de Participación en Eventos</h1>
         <div className="text-sm text-gray-600">
           Usuario: <span className="font-semibold">{user?.username}</span> | 
           Rol: <span className="font-semibold">{user?.role}</span>
@@ -350,32 +346,23 @@ export default function DonationReportViewer() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Categoría</label>
-              <select
-                value={filters.category}
-                onChange={(e) => handleFilterChange('category', e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg"
-              >
-                <option value="">Todas</option>
-                {CATEGORIES.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Estado</label>
-              <select
-                value={filters.deleted === null ? '' : filters.deleted.toString()}
-                onChange={(e) => handleFilterChange('deleted', e.target.value === '' ? null : e.target.value === 'true')}
-                className="w-full px-3 py-2 border rounded-lg"
-              >
-                <option value="">Todos</option>
-                <option value="false">Activos</option>
-                <option value="true">Eliminados</option>
-              </select>
+              <label className="block text-sm font-medium mb-1">
+                Usuario <span className="text-red-500">*</span>
+              </label>
+              <Input
+                type="text"
+                value={filters.user}
+                onChange={(e) => handleFilterChange('user', e.target.value)}
+                placeholder="Username"
+                disabled={!canViewAllUsers}
+              />
+              {!canViewAllUsers && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Solo puedes ver tu propia participación
+                </p>
+              )}
             </div>
 
             <div>
@@ -409,10 +396,6 @@ export default function DonationReportViewer() {
               <Save className="h-4 w-4 mr-2" />
               Guardar Filtro Actual
             </Button>
-            <Button onClick={handleDownloadExcel} variant="secondary">
-              <FileSpreadsheet className="h-4 w-4 mr-2" />
-              Descargar Excel
-            </Button>
           </div>
 
           {/* Formulario para guardar filtro */}
@@ -425,7 +408,7 @@ export default function DonationReportViewer() {
                 <Input
                   value={filterName}
                   onChange={(e) => setFilterName(e.target.value)}
-                  placeholder="Ej: Donaciones activas de alimentos"
+                  placeholder="Ej: Mis eventos del último mes"
                   className="flex-1"
                 />
                 <Button onClick={handleSaveFilter}>
@@ -468,44 +451,42 @@ export default function DonationReportViewer() {
         </Card>
       )}
 
-      {/* Resumen Agrupado */}
+      {/* Resumen por Mes */}
       {!reportLoading && summary.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Resumen por Categoría</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Resumen Mensual
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left p-2">Categoría</th>
-                    <th className="text-left p-2">Estado</th>
-                    <th className="text-right p-2">Cantidad Total</th>
+                    <th className="text-left p-2">Mes</th>
+                    <th className="text-right p-2">Total Eventos</th>
+                    <th className="text-right p-2">Total Participaciones</th>
                   </tr>
                 </thead>
                 <tbody>
                   {summary.map((item, idx) => (
                     <tr key={idx} className="border-b hover:bg-gray-50">
-                      <td className="p-2 font-medium">{item.category}</td>
-                      <td className="p-2">
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          item.deleted
-                            ? 'bg-red-100 text-red-700'
-                            : 'bg-green-100 text-green-700'
-                        }`}>
-                          {item.deleted ? 'Eliminado' : 'Activo'}
-                        </span>
-                      </td>
-                      <td className="p-2 text-right font-bold">{item.totalQuantity}</td>
+                      <td className="p-2 font-medium">{formatMonthYear(item.year, item.month)}</td>
+                      <td className="p-2 text-right">{item.totalEvents}</td>
+                      <td className="p-2 text-right">{item.totalParticipations}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
                   <tr className="bg-gray-100 font-bold">
-                    <td className="p-2" colSpan="2">TOTAL GENERAL</td>
+                    <td className="p-2">TOTAL</td>
                     <td className="p-2 text-right">
-                      {summary.reduce((sum, item) => sum + item.totalQuantity, 0)}
+                      {summary.reduce((sum, item) => sum + item.totalEvents, 0)}
+                    </td>
+                    <td className="p-2 text-right">
+                      {summary.reduce((sum, item) => sum + item.totalParticipations, 0)}
                     </td>
                   </tr>
                 </tfoot>
@@ -515,55 +496,47 @@ export default function DonationReportViewer() {
         </Card>
       )}
 
-      {/* Detalle de Donaciones */}
+      {/* Detalle por Mes */}
       {!reportLoading && details.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Detalle de Donaciones ({details.length} registros)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">ID</th>
-                    <th className="text-left p-2">Categoría</th>
-                    <th className="text-left p-2">Descripción</th>
-                    <th className="text-right p-2">Cantidad</th>
-                    <th className="text-center p-2">Estado</th>
-                    <th className="text-left p-2">Fecha Alta</th>
-                    <th className="text-left p-2">Usuario Alta</th>
-                    <th className="text-left p-2">Fecha Modificación</th>
-                    <th className="text-left p-2">Usuario Modificación</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {details.map((item) => (
-                    <tr key={item.id} className="border-b hover:bg-gray-50">
-                      <td className="p-2">{item.id}</td>
-                      <td className="p-2 font-medium">{item.category}</td>
-                      <td className="p-2">{item.description}</td>
-                      <td className="p-2 text-right">{item.quantity}</td>
-                      <td className="p-2 text-center">
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          item.deleted
-                            ? 'bg-red-100 text-red-700'
-                            : 'bg-green-100 text-green-700'
-                        }`}>
-                          {item.deleted ? 'Eliminado' : 'Activo'}
-                        </span>
-                      </td>
-                      <td className="p-2">{formatDate(item.createdAt)}</td>
-                      <td className="p-2">{item.createdBy}</td>
-                      <td className="p-2">{formatDate(item.updatedAt)}</td>
-                      <td className="p-2">{item.updatedBy || '-'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold">Detalle de Participaciones</h2>
+          {Object.keys(detailsByMonth).sort().reverse().map(monthKey => {
+            const [year, month] = monthKey.split('-');
+            const monthDetails = detailsByMonth[monthKey];
+            
+            return (
+              <Card key={monthKey}>
+                <CardHeader>
+                  <CardTitle>
+                    {formatMonthYear(parseInt(year), parseInt(month))} 
+                    <span className="text-sm font-normal ml-2">
+                      ({monthDetails.length} participaciones)
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {monthDetails.map((detail, idx) => (
+                      <div key={idx} className="p-3 bg-gray-50 rounded-lg">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="font-medium text-lg">{detail.eventName}</div>
+                            <div className="text-sm text-gray-600">
+                              Participante: <span className="font-medium">{detail.user}</span>
+                            </div>
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {formatDate(detail.participationDate)}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       )}
 
       {/* Sin resultados */}
@@ -571,7 +544,7 @@ export default function DonationReportViewer() {
         <Card>
           <CardContent className="p-6">
             <p className="text-center text-gray-600">
-              No se encontraron donaciones con los filtros aplicados
+              No se encontraron participaciones en eventos con los filtros aplicados
             </p>
           </CardContent>
         </Card>

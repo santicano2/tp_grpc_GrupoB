@@ -1,8 +1,14 @@
-import { ApolloClient, InMemoryCache, ApolloProvider } from '@apollo/client';
+import { ApolloClient, InMemoryCache, HttpLink } from "@apollo/client";
+import { ApolloProvider } from "@apollo/client/react";
 
-// Cambia la URL si tu backend GraphQL corre en otro host/puerto
+// Crear el link HTTP explicitamente
+const httpLink = new HttpLink({
+  uri: "http://localhost:8000/graphql",
+});
+
+// Configurar el cliente Apollo
 const client = new ApolloClient({
-  uri: 'http://localhost:8000/graphql',
+  link: httpLink,
   cache: new InMemoryCache(),
 });
 

@@ -1,4 +1,4 @@
-import { Users, Package, Calendar, Home, LogOut, Menu, X, Send, Globe } from "lucide-react";
+import { Users, Package, Calendar, Home, LogOut, Menu, X, Send, Globe, FileText, CalendarCheck } from "lucide-react";
 
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -45,8 +45,14 @@ const Sidebar = ({ isOpen, onToggle, activeSection, onSectionChange }) => {
 {
   id: "donation-report",
   label: "Informe de Donaciones",
-  icon: Package,
+  icon: FileText,
   roles: ["PRESIDENTE", "VOCAL"],
+},
+{
+  id: "informe-eventos",
+  label: "Informe de Eventos",
+  icon: CalendarCheck,
+  roles: ["PRESIDENTE", "VOCAL", "COORDINADOR", "VOLUNTARIO"],
 },
   ];
 
