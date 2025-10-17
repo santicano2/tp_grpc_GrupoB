@@ -1,7 +1,10 @@
 package com.example.api.rest.dto;
 
-import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import ong.inventory.Inventory;
 
 @Schema(description = "Representa una donación para el reporte en Excel")
 public class DonacionReporteDTO {
@@ -47,4 +50,25 @@ public class DonacionReporteDTO {
 
     public String getUsuarioModificacion() { return usuarioModificacion; }
     public void setUsuarioModificacion(String usuarioModificacion) { this.usuarioModificacion = usuarioModificacion; }
+
+    // --- Método estático agregado ---
+    public static DonacionReporteDTO fromDonationItem(Inventory.DonationItem d) {
+        DonacionReporteDTO dto = new DonacionReporteDTO();
+        dto.setCategoria(d.getCategory().name());
+        dto.setDescripcion(d.getDescription());
+        dto.setCantidad(d.getQuantity());
+        dto.setEliminado(d.getDeleted());
+        dto.setUsuarioAlta(d.getCreatedBy());
+        dto.setUsuarioModificacion(d.getUpdatedBy());
+
+        if (!d.getCreatedAt().isEmpty()) {
+            try {
+                dto.setFechaAlta(LocalDateTime.parse(d.getCreatedAt(),
+                        DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+            } catch (Exception e) {
+                System.err.println("Error parseando fecha: " + d.getCreatedAt());
+            }
+        }
+        return dto;
+    }
 }
