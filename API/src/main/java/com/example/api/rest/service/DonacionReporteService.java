@@ -2,6 +2,8 @@ package com.example.api.rest.service;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +25,7 @@ public class DonacionReporteService {
 
     private final DonacionClientService donacionClient;
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     public DonacionReporteService(DonacionClientService donacionClient) {
         this.donacionClient = donacionClient;
@@ -35,8 +38,12 @@ public class DonacionReporteService {
                 .collect(Collectors.toList());
     }
 
-    public byte[] generarExcelPorCategoria() throws IOException {
+    public byte[] generarExcelPorCategoria(String category, Boolean deleted, String dateFrom, String dateTo) throws IOException {
         List<DonacionReporteDTO> donaciones = obtenerDonaciones();
+        
+        // aplicar filtros
+        donaciones = aplicarFiltros(donaciones, category, deleted, dateFrom, dateTo);
+        
         Workbook workbook = new XSSFWorkbook();
 
         Map<String, List<DonacionReporteDTO>> porCategoria = donaciones.stream()
@@ -72,4 +79,34 @@ public class DonacionReporteService {
         workbook.close();
         return stream.toByteArray();
     }
+
+    private List<DonacionReporteDTO> aplicarFiltros(List<DonacionReporteDTO> donaciones, 
+                                                     String category, Boolean deleted, 
+                                                     String dateFrom, String dateTo) {
+        return donaciones.stream()
+                .filter(d -> category == null || d.getCategoria().equalsIgnoreCase(category))
+                .filter(d -> deleted == null || d.isEliminado() == deleted)
+                .filter(d -> {
+                    if (dateFrom == null) return true;
+                    try {
+                        LocalDate from = LocalDate.parse(dateFrom, DATE_FORMATTER);
+                        return d.getFechaAlta() != null && 
+                               !d.getFechaAlta().toLocalDate().isBefore(from);
+                    } catch (Exception e) {
+                        return true;
+                    }
+                })
+                .filter(d -> {
+                    if (dateTo == null) return true;
+                    try {
+                        LocalDate to = LocalDate.parse(dateTo, DATE_FORMATTER);
+                        return d.getFechaAlta() != null && 
+                               !d.getFechaAlta().toLocalDate().isAfter(to);
+                    } catch (Exception e) {
+                        return true;
+                    }
+                })
+                .collect(Collectors.toList());
+    }
 }
+
