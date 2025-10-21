@@ -1,11 +1,18 @@
-import { useState } from 'react';
-import { gql } from '@apollo/client';
-import { useQuery, useMutation } from '@apollo/client/react';
-import { useAuth } from '../../contexts/AuthContext';
-import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
-import Button from '../ui/Button';
-import Input from '../ui/Input';
-import { Filter, Save, Trash2, Edit2, AlertCircle, FileSpreadsheet } from 'lucide-react';
+import { useState } from "react";
+import { gql } from "@apollo/client";
+import { useQuery, useMutation } from "@apollo/client/react";
+import { useAuth } from "../../contexts/AuthContext";
+import { Card, CardHeader, CardTitle, CardContent } from "../ui/Card";
+import Button from "../ui/Button";
+import Input from "../ui/Input";
+import {
+  Filter,
+  Save,
+  Trash2,
+  Edit2,
+  AlertCircle,
+  FileSpreadsheet,
+} from "lucide-react";
 
 // GraphQL Queries y Mutations
 const DONATION_REPORT = gql`
@@ -45,7 +52,11 @@ const LIST_SAVED_FILTERS = gql`
 `;
 
 const SAVE_FILTER = gql`
-  mutation SaveFilter($actorUsername: String!, $input: SavedFilterInput!, $tipo: String!) {
+  mutation SaveFilter(
+    $actorUsername: String!
+    $input: SavedFilterInput!
+    $tipo: String!
+  ) {
     saveFilter(actorUsername: $actorUsername, input: $input, tipo: $tipo) {
       id
       name
@@ -56,8 +67,16 @@ const SAVE_FILTER = gql`
 `;
 
 const UPDATE_FILTER = gql`
-  mutation UpdateFilter($actorUsername: String!, $filterId: Int!, $input: SavedFilterInput!) {
-    updateFilter(actorUsername: $actorUsername, filterId: $filterId, input: $input) {
+  mutation UpdateFilter(
+    $actorUsername: String!
+    $filterId: Int!
+    $input: SavedFilterInput!
+  ) {
+    updateFilter(
+      actorUsername: $actorUsername
+      filterId: $filterId
+      input: $input
+    ) {
       id
       name
       filtersJson
@@ -71,50 +90,52 @@ const DELETE_FILTER = gql`
   }
 `;
 
-const CATEGORIES = ['ALIMENTOS', 'ROPA', 'JUGUETES', 'UTILES_ESCOLARES'];
+const CATEGORIES = ["ALIMENTOS", "ROPA", "JUGUETES", "UTILES_ESCOLARES"];
 
 export default function DonationReportViewer() {
   const { user } = useAuth();
-  
+
   // Estados del formulario de filtros
   const [filters, setFilters] = useState({
-    category: '',
+    category: "",
     deleted: null,
-    dateFrom: '',
-    dateTo: ''
+    dateFrom: "",
+    dateTo: "",
   });
 
   // Estados para gestión de filtros guardados
   const [showSaveFilter, setShowSaveFilter] = useState(false);
-  const [filterName, setFilterName] = useState('');
+  const [filterName, setFilterName] = useState("");
   const [editingFilter, setEditingFilter] = useState(null);
   const [selectedFilterId, setSelectedFilterId] = useState(null);
 
   // GraphQL queries y mutations
-  const { data: reportData, loading: reportLoading, error: reportError, refetch } = useQuery(
-    DONATION_REPORT,
-    {
-      variables: {
-        actorUsername: user?.username,
-        filter: {
-          category: filters.category || null,
-          deleted: filters.deleted,
-          dateFrom: filters.dateFrom || null,
-          dateTo: filters.dateTo || null
-        }
+  const {
+    data: reportData,
+    loading: reportLoading,
+    error: reportError,
+    refetch,
+  } = useQuery(DONATION_REPORT, {
+    variables: {
+      actorUsername: user?.username,
+      filter: {
+        category: filters.category || null,
+        deleted: filters.deleted,
+        dateFrom: filters.dateFrom || null,
+        dateTo: filters.dateTo || null,
       },
-      skip: !user?.username
-    }
-  );
+    },
+    skip: !user?.username,
+  });
 
   const { data: savedFiltersData, refetch: refetchFilters } = useQuery(
     LIST_SAVED_FILTERS,
     {
       variables: {
         actorUsername: user?.username,
-        tipo: 'DONACIONES'
+        tipo: "DONACIONES",
       },
-      skip: !user?.username
+      skip: !user?.username,
     }
   );
 
@@ -122,45 +143,48 @@ export default function DonationReportViewer() {
     onCompleted: () => {
       refetchFilters();
       setShowSaveFilter(false);
-      setFilterName('');
-      alert('Filtro guardado exitosamente');
+      setFilterName("");
+      alert("Filtro guardado exitosamente");
     },
     onError: (error) => {
       alert(`Error al guardar filtro: ${error.message}`);
-    }
+    },
   });
 
   const [updateFilterMutation] = useMutation(UPDATE_FILTER, {
     onCompleted: () => {
       refetchFilters();
       setEditingFilter(null);
-      setFilterName('');
-      alert('Filtro actualizado exitosamente');
+      setFilterName("");
+      alert("Filtro actualizado exitosamente");
     },
     onError: (error) => {
       alert(`Error al actualizar filtro: ${error.message}`);
-    }
+    },
   });
 
   const [deleteFilterMutation] = useMutation(DELETE_FILTER, {
     onCompleted: () => {
       refetchFilters();
-      alert('Filtro eliminado exitosamente');
+      alert("Filtro eliminado exitosamente");
     },
     onError: (error) => {
       alert(`Error al eliminar filtro: ${error.message}`);
-    }
+    },
   });
 
   // Verificar permisos (solo PRESIDENTE y VOCAL)
-  if (!user || (user.role !== 'PRESIDENTE' && user.role !== 'VOCAL')) {
+  if (!user || (user.role !== "PRESIDENTE" && user.role !== "VOCAL")) {
     return (
       <div className="p-6">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-2 text-red-600">
               <AlertCircle className="h-5 w-5" />
-              <p>No tienes permisos para acceder a este informe. Solo PRESIDENTE y VOCAL pueden ver esta información.</p>
+              <p>
+                No tienes permisos para acceder a este informe. Solo PRESIDENTE
+                y VOCAL pueden ver esta información.
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -169,7 +193,7 @@ export default function DonationReportViewer() {
   }
 
   const handleFilterChange = (field, value) => {
-    setFilters(prev => ({ ...prev, [field]: value }));
+    setFilters((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleApplyFilter = () => {
@@ -178,17 +202,17 @@ export default function DonationReportViewer() {
 
   const handleClearFilters = () => {
     setFilters({
-      category: '',
+      category: "",
       deleted: null,
-      dateFrom: '',
-      dateTo: ''
+      dateFrom: "",
+      dateTo: "",
     });
     setSelectedFilterId(null);
   };
 
   const handleSaveFilter = () => {
     if (!filterName.trim()) {
-      alert('Por favor ingresa un nombre para el filtro');
+      alert("Por favor ingresa un nombre para el filtro");
       return;
     }
 
@@ -201,9 +225,9 @@ export default function DonationReportViewer() {
           filterId: editingFilter.id,
           input: {
             name: filterName,
-            filtersJson
-          }
-        }
+            filtersJson,
+          },
+        },
       });
     } else {
       saveFilterMutation({
@@ -211,10 +235,10 @@ export default function DonationReportViewer() {
           actorUsername: user.username,
           input: {
             name: filterName,
-            filtersJson
+            filtersJson,
           },
-          tipo: 'DONACIONES'
-        }
+          tipo: "DONACIONES",
+        },
       });
     }
   };
@@ -235,12 +259,12 @@ export default function DonationReportViewer() {
   };
 
   const handleDeleteFilter = (filterId) => {
-    if (confirm('¿Estás seguro de que deseas eliminar este filtro?')) {
+    if (confirm("¿Estás seguro de que deseas eliminar este filtro?")) {
       deleteFilterMutation({
         variables: {
           actorUsername: user.username,
-          filterId
-        }
+          filterId,
+        },
       });
     }
   };
@@ -248,22 +272,27 @@ export default function DonationReportViewer() {
   const handleDownloadExcel = async () => {
     try {
       const queryParams = new URLSearchParams();
-      if (filters.category) queryParams.append('category', filters.category);
-      if (filters.deleted !== null) queryParams.append('deleted', filters.deleted);
-      if (filters.dateFrom) queryParams.append('date_from', filters.dateFrom);
-      if (filters.dateTo) queryParams.append('date_to', filters.dateTo);
+      if (filters.category) queryParams.append("category", filters.category);
+      if (filters.deleted !== null)
+        queryParams.append("deleted", filters.deleted);
+      if (filters.dateFrom) queryParams.append("date_from", filters.dateFrom);
+      if (filters.dateTo) queryParams.append("date_to", filters.dateTo);
 
-      const response = await fetch(`http://localhost:8000/informe-donaciones-excel?${queryParams.toString()}`);
-      
+      const response = await fetch(
+        `http://localhost:8080/reporte/excel?${queryParams.toString()}`
+      );
+
       if (!response.ok) {
-        throw new Error('Error al generar el archivo Excel');
+        throw new Error("Error al generar el archivo Excel");
       }
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = `informe_donaciones_${new Date().toISOString().split('T')[0]}.xlsx`;
+      a.download = `informe_donaciones_${
+        new Date().toISOString().split("T")[0]
+      }.xlsx`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -274,9 +303,9 @@ export default function DonationReportViewer() {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return '-';
+    if (!dateString) return "-";
     try {
-      return new Date(dateString).toLocaleString('es-AR');
+      return new Date(dateString).toLocaleString("es-AR");
     } catch {
       return dateString;
     }
@@ -291,7 +320,7 @@ export default function DonationReportViewer() {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Informe de Donaciones</h1>
         <div className="text-sm text-gray-600">
-          Usuario: <span className="font-semibold">{user?.username}</span> | 
+          Usuario: <span className="font-semibold">{user?.username}</span> |
           Rol: <span className="font-semibold">{user?.role}</span>
         </div>
       </div>
@@ -307,13 +336,13 @@ export default function DonationReportViewer() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {savedFilters.map(filter => (
+              {savedFilters.map((filter) => (
                 <div
                   key={filter.id}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
                     selectedFilterId === filter.id
-                      ? 'bg-blue-100 border-blue-500'
-                      : 'bg-gray-100 border-gray-300'
+                      ? "bg-blue-100 border-blue-500"
+                      : "bg-gray-100 border-gray-300"
                   }`}
                 >
                   <button
@@ -352,15 +381,19 @@ export default function DonationReportViewer() {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Categoría</label>
+              <label className="block text-sm font-medium mb-1">
+                Categoría
+              </label>
               <select
                 value={filters.category}
-                onChange={(e) => handleFilterChange('category', e.target.value)}
+                onChange={(e) => handleFilterChange("category", e.target.value)}
                 className="w-full px-3 py-2 border rounded-lg"
               >
                 <option value="">Todas</option>
-                {CATEGORIES.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
+                {CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
                 ))}
               </select>
             </div>
@@ -368,8 +401,15 @@ export default function DonationReportViewer() {
             <div>
               <label className="block text-sm font-medium mb-1">Estado</label>
               <select
-                value={filters.deleted === null ? '' : filters.deleted.toString()}
-                onChange={(e) => handleFilterChange('deleted', e.target.value === '' ? null : e.target.value === 'true')}
+                value={
+                  filters.deleted === null ? "" : filters.deleted.toString()
+                }
+                onChange={(e) =>
+                  handleFilterChange(
+                    "deleted",
+                    e.target.value === "" ? null : e.target.value === "true"
+                  )
+                }
                 className="w-full px-3 py-2 border rounded-lg"
               >
                 <option value="">Todos</option>
@@ -379,20 +419,24 @@ export default function DonationReportViewer() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">Fecha Desde</label>
+              <label className="block text-sm font-medium mb-1">
+                Fecha Desde
+              </label>
               <Input
                 type="date"
                 value={filters.dateFrom}
-                onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
+                onChange={(e) => handleFilterChange("dateFrom", e.target.value)}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">Fecha Hasta</label>
+              <label className="block text-sm font-medium mb-1">
+                Fecha Hasta
+              </label>
               <Input
                 type="date"
                 value={filters.dateTo}
-                onChange={(e) => handleFilterChange('dateTo', e.target.value)}
+                onChange={(e) => handleFilterChange("dateTo", e.target.value)}
               />
             </div>
           </div>
@@ -405,7 +449,10 @@ export default function DonationReportViewer() {
             <Button onClick={handleClearFilters} variant="secondary">
               Limpiar Filtros
             </Button>
-            <Button onClick={() => setShowSaveFilter(!showSaveFilter)} variant="secondary">
+            <Button
+              onClick={() => setShowSaveFilter(!showSaveFilter)}
+              variant="secondary"
+            >
               <Save className="h-4 w-4 mr-2" />
               Guardar Filtro Actual
             </Button>
@@ -419,7 +466,7 @@ export default function DonationReportViewer() {
           {showSaveFilter && (
             <div className="p-4 bg-gray-50 rounded-lg space-y-2">
               <label className="block text-sm font-medium">
-                Nombre del filtro {editingFilter && '(editando)'}
+                Nombre del filtro {editingFilter && "(editando)"}
               </label>
               <div className="flex gap-2">
                 <Input
@@ -429,13 +476,13 @@ export default function DonationReportViewer() {
                   className="flex-1"
                 />
                 <Button onClick={handleSaveFilter}>
-                  {editingFilter ? 'Actualizar' : 'Guardar'}
+                  {editingFilter ? "Actualizar" : "Guardar"}
                 </Button>
                 <Button
                   onClick={() => {
                     setShowSaveFilter(false);
                     setEditingFilter(null);
-                    setFilterName('');
+                    setFilterName("");
                   }}
                   variant="secondary"
                 >
@@ -489,23 +536,32 @@ export default function DonationReportViewer() {
                     <tr key={idx} className="border-b hover:bg-gray-50">
                       <td className="p-2 font-medium">{item.category}</td>
                       <td className="p-2">
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          item.deleted
-                            ? 'bg-red-100 text-red-700'
-                            : 'bg-green-100 text-green-700'
-                        }`}>
-                          {item.deleted ? 'Eliminado' : 'Activo'}
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs ${
+                            item.deleted
+                              ? "bg-red-100 text-red-700"
+                              : "bg-green-100 text-green-700"
+                          }`}
+                        >
+                          {item.deleted ? "Eliminado" : "Activo"}
                         </span>
                       </td>
-                      <td className="p-2 text-right font-bold">{item.totalQuantity}</td>
+                      <td className="p-2 text-right font-bold">
+                        {item.totalQuantity}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
                   <tr className="bg-gray-100 font-bold">
-                    <td className="p-2" colSpan="2">TOTAL GENERAL</td>
+                    <td className="p-2" colSpan="2">
+                      TOTAL GENERAL
+                    </td>
                     <td className="p-2 text-right">
-                      {summary.reduce((sum, item) => sum + item.totalQuantity, 0)}
+                      {summary.reduce(
+                        (sum, item) => sum + item.totalQuantity,
+                        0
+                      )}
                     </td>
                   </tr>
                 </tfoot>
@@ -519,7 +575,9 @@ export default function DonationReportViewer() {
       {!reportLoading && details.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Detalle de Donaciones ({details.length} registros)</CardTitle>
+            <CardTitle>
+              Detalle de Donaciones ({details.length} registros)
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -545,18 +603,20 @@ export default function DonationReportViewer() {
                       <td className="p-2">{item.description}</td>
                       <td className="p-2 text-right">{item.quantity}</td>
                       <td className="p-2 text-center">
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          item.deleted
-                            ? 'bg-red-100 text-red-700'
-                            : 'bg-green-100 text-green-700'
-                        }`}>
-                          {item.deleted ? 'Eliminado' : 'Activo'}
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs ${
+                            item.deleted
+                              ? "bg-red-100 text-red-700"
+                              : "bg-green-100 text-green-700"
+                          }`}
+                        >
+                          {item.deleted ? "Eliminado" : "Activo"}
                         </span>
                       </td>
                       <td className="p-2">{formatDate(item.createdAt)}</td>
                       <td className="p-2">{item.createdBy}</td>
                       <td className="p-2">{formatDate(item.updatedAt)}</td>
-                      <td className="p-2">{item.updatedBy || '-'}</td>
+                      <td className="p-2">{item.updatedBy || "-"}</td>
                     </tr>
                   ))}
                 </tbody>

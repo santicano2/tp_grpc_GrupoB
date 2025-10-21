@@ -6,7 +6,7 @@ services:
       DB_HOST: mysql
       DB_PORT: 3306
       DB_USER: empuje_user
-      DB_PASSWORD: 1234
+      DB_PASSWORD: empuje_password
       DB_NAME: empuje_comunitario
     command: uvicorn server.main_graphql:app --host 0.0.0.0 --port 8000 --reload
     ports:
@@ -25,7 +25,7 @@ services:
       MYSQL_ROOT_PASSWORD: 1234
       MYSQL_DATABASE: empuje_comunitario
       MYSQL_USER: empuje_user
-      MYSQL_PASSWORD: 1234
+      MYSQL_PASSWORD: empuje_password
     ports:
       - "3307:3306"
     volumes:
@@ -46,7 +46,7 @@ services:
     environment:
       PMA_HOST: mysql
       PMA_USER: empuje_user
-      PMA_PASSWORD: 1234
+      PMA_PASSWORD: empuje_password
     ports:
       - "8081:80"
     depends_on:
@@ -94,7 +94,7 @@ services:
       DB_HOST: mysql
       DB_PORT: 3306
       DB_USER: empuje_user
-      DB_PASSWORD: 1234
+      DB_PASSWORD: empuje_password
       DB_NAME: empuje_comunitario
     command: ["python", "-m", "server.server"]
     ports:
@@ -113,7 +113,7 @@ services:
       DB_HOST: mysql
       DB_PORT: 3306
       DB_USER: empuje_user
-      DB_PASSWORD: 1234
+      DB_PASSWORD: empuje_password
       DB_NAME: empuje_comunitario
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       ORGANIZATION_ID: org-empuje-001
