@@ -2,12 +2,99 @@
 
 Trabajo práctico sobre RPC de la materia Desarrollo de Software en Sistemas Distribuidos. UNLa
 
+Sistema de gestión para ONG "Empuje Comunitario" desarrollado con **gRPC**, **Kafka**, **GraphQL**, **REST** y **SOAP**.
+
 ## Integrantes
 
 - Carlos Iglesias
 - Nicolas Alejandro Romero Ortiz
 - Anahí Maitén Mansilla
 - Santiago Martin Cano
+
+## Características principales
+
+### TP1 - Base gRPC
+
+- **Gestión de usuarios** con 4 roles (Presidente, Vocal, Coordinador, Voluntario)
+- **Inventario de donaciones** por categorías (ROPA, ALIMENTOS, JUGUETES, UTILES_ESCOLARES)
+- **Eventos solidarios** con gestión de participantes y distribución de donaciones
+- **Autenticación y autorización** basada en roles
+- **Microservicios gRPC** (Python) con API Gateway (Spring Boot)
+
+### TP2 - Integración con Kafka
+
+- **Sistema de mensajería** para red colaborativa de ONGs
+- **Solicitudes de donaciones** entre organizaciones
+- **Transferencias de donaciones** con actualización automática de inventarios
+- **Ofertas de donaciones** publicadas en la red
+- **Eventos solidarios externos** con adhesión de voluntarios de otras ONGs
+
+### TP3 - Web services - REST, GraphQL y SOAP
+
+- **Informes GraphQL** de donaciones y participación en eventos con filtros personalizables guardables
+- **Exportación Excel** (REST) de donaciones con filtros opcionales
+- **Cliente SOAP** para consultar presidentes y organizaciones de la red
+- **Documentación Swagger/OpenAPI** para endpoints REST
+
+## Tecnologías utilizadas
+
+### Backend
+
+- **gRPC** (Python 3.12) - Comunicación entre microservicios
+- **Spring Boot 3.3.5** - API Gateway con JAX-WS para SOAP
+- **Apache Kafka** - Sistema de mensajería asíncrono
+- **GraphQL** (Python + Strawberry) - Consultas flexibles y filtros
+- **REST** (Spring Boot) - Endpoints con Swagger/OpenAPI
+- **SOAP Client** (JAX-WS 4.0.0) - Integración con red externa de ONGs
+- **MySQL 8** - Base de datos relacional
+- **Apache POI** - Generación de reportes Excel
+
+### Frontend
+
+- **React 19.1** + **Vite** - Interfaz de usuario moderna
+- **Apollo Client** - Cliente GraphQL
+
+### DevOps
+
+- **Docker** y **Docker Compose** - Contenedorización de servicios
+- **Maven** - Gestión de dependencias Java y generación de código SOAP
+- **pip** - Gestión de dependencias Python
+
+## Arquitectura del sistema
+
+```
+                                    ┌─────────────────────────┐
+                                    │   Frontend (React)      │
+                                    │        :5173            │
+                                    └───────────┬─────────────┘
+                                                │
+                    ┌───────────────────────────┼───────────────────────────┐
+                    │                           │                           │
+            ┌───────▼──────────┐        ┌──────▼──────────┐        ┌──────▼──────────┐
+            │  API Gateway     │        │  GraphQL Server │        │  Kafka Server   │
+            │  (Spring Boot)   │◄───────┤    (Python)     │        │    (Python)     │
+            │     :8080        │        │      :8000      │        │     :9092       │
+            └─────────┬────────┘        └─────────────────┘        └─────────────────┘
+                      │
+         ┌────────────┼────────────┐
+         │            │            │
+   ┌─────▼─────┐  ┌──▼──────┐  ┌──▼──────────┐
+   │ gRPC      │  │  SOAP   │  │   MySQL     │
+   │ Server    │  │ Client  │  │   :3307     │
+   │ (Python)  │  │ (JAX-WS)│  └─────────────┘
+   │  :50051   │  │ External│
+   └───────────┘  └─────────┘
+```
+
+## Acceso a los servicios
+
+- **Frontend**: http://localhost:5173
+- **API Gateway**: http://localhost:8080
+- **GraphQL Server**: http://localhost:8000/graphql
+- **Servidor gRPC**: localhost:50051
+- **Kafka**: localhost:9092
+- **phpMyAdmin**: http://localhost:8081
+- **Swagger UI**: http://localhost:8080/swagger-ui.html
 
 ## Prerrequisitos
 
@@ -26,8 +113,6 @@ Trabajo práctico sobre RPC de la materia Desarrollo de Software en Sistemas Dis
 - **MySQL**: 8.0+ (o usar Docker solo para la BD)
 
 ## Cómo iniciar el sistema completo
-
-### Opción 1: Con Docker (Recomendado)
 
 1. **Instalar Docker y Docker Compose** en tu sistema.
 
@@ -58,58 +143,23 @@ Trabajo práctico sobre RPC de la materia Desarrollo de Software en Sistemas Dis
    docker-compose down
    ```
 
-### Opción 2: Ejecución manual
-
-#### 1. Base de datos MySQL
-
-```bash
-# Iniciar solo la base de datos con Docker
-docker-compose up mysql phpmyadmin -d
-```
-
-#### 2. Servidor gRPC (Python)
-
-```bash
-cd server
-python -m venv .venv
-# Windows:
-.venv\Scripts\activate
-# Linux/Mac:
-# source .venv/bin/activate
-
-pip install -r requirements.txt
-python server/server.py
-```
-
-#### 3. API Gateway (Spring Boot)
-
-```bash
-cd API
-./mvnw compile        # Generar clases gRPC
-./mvnw spring-boot:run
-```
-
-#### 4. Frontend (React + Vite)
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-### Arquitectura del sistema
-
-```
-Frontend (React)    →    API Gateway (Spring Boot)    →    Servidor gRPC (Python)    →    MySQL
-    :5173                       :8080                          :50051                    :3307
-```
-
 ### Acceso a los servicios
 
 - **Frontend**: http://localhost:5173
 - **API Gateway**: http://localhost:8080
+- **GraphQL Server**: http://localhost:8000/graphql
 - **Servidor gRPC**: localhost:50051
+- **Kafka**: localhost:9092
 - **phpMyAdmin**: http://localhost:8081
+
+## Documentación de APIs
+
+- **Swagger UI (REST)**: http://localhost:8080/swagger-ui.html
+  - Documentación interactiva de endpoints REST
+  - Incluye: Filtros guardados, Reportes Excel, Consulta Red de ONGs (SOAP)
+- **GraphQL Playground**: http://localhost:8000/graphql
+  - Interfaz para consultas GraphQL
+  - Incluye: Informes de donaciones e informes de participación en eventos
 
 ## Probar la API gRPC con Postman
 

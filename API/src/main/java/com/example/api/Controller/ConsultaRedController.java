@@ -20,20 +20,88 @@ import com.example.api.soap.generated.OrganizationType;
 import com.example.api.soap.generated.PresidentType;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/api/consulta-red")
-@Tag(name = "Consulta Red ONGs", description = "Endpoints para consultar presidentes y organizaciones de la red")
+@Tag(name = "Red de ONGs (SOAP)", description = "Consulta información de presidentes y organizaciones de la red mediante servicio SOAP externo")
 public class ConsultaRedController {
 
     @Autowired
     private SoapClientService soapClientService;
 
     @PostMapping("/consultar")
-    @Operation(summary = "Consultar presidentes y organizaciones", 
-               description = "Obtiene los datos de presidentes y organizaciones por sus IDs")
+    @Operation(
+        summary = "Consultar presidentes y organizaciones por IDs",
+        description = "Obtiene información de presidentes y organizaciones de la red mediante servicio SOAP. " +
+                      "Requiere una lista de IDs de organizaciones. El servicio retorna los datos de los presidentes " +
+                      "y las organizaciones correspondientes a esos IDs."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Consulta exitosa",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = Map.class),
+                examples = @ExampleObject(
+                    value = """
+                    {
+                      "presidentes": [
+                        {
+                          "id": 52,
+                          "name": "Juan Pérez",
+                          "address": "Av. Principal 123",
+                          "phone": "+34 600 00 052",
+                          "organizationId": 6
+                        }
+                      ],
+                      "organizaciones": [
+                        {
+                          "id": 6,
+                          "name": "ONG Ejemplo",
+                          "address": "Calle 28 # 128",
+                          "phone": "+34 600 00 028"
+                        }
+                      ],
+                      "totalPresidentes": 1,
+                      "totalOrganizaciones": 1
+                    }
+                    """
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Request inválido - lista de IDs vacía o faltante"
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Error al comunicarse con el servicio SOAP externo"
+        )
+    })
     public ResponseEntity<Map<String, Object>> consultarPresidentesYOrganizaciones(
+            @Parameter(
+                description = "Objeto JSON con array de IDs de organizaciones a consultar",
+                required = true,
+                content = @Content(
+                    mediaType = "application/json",
+                    examples = @ExampleObject(
+                        name = "Ejemplo de request",
+                        value = """
+                        {
+                          "orgIds": ["1", "2", "3"]
+                        }
+                        """
+                    )
+                )
+            )
             @RequestBody Map<String, List<String>> request) {
         
         try {

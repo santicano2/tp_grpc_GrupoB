@@ -12,9 +12,13 @@ import com.example.api.rest.service.DonacionReporteService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-@Tag(name = "Reportes de Donaciones", description = "Genera reportes agrupados por categoría en formato Excel")
+@Tag(name = "Reportes de Donaciones", description = "Genera reportes de donaciones en formato Excel con filtros opcionales")
 @RestController
 @RequestMapping("/reporte")
 public class DonacionReporteController {
@@ -26,21 +30,46 @@ public class DonacionReporteController {
     }
 
     @Operation(
-        summary = "Generar Excel de donaciones",
-        description = "Genera un archivo Excel con las donaciones agrupadas por categoría. Permite filtrar por categoría, estado de eliminado y rango de fechas."
+        summary = "Generar Excel de donaciones con filtros",
+        description = "Genera un archivo Excel con las donaciones agrupadas por categoría en hojas separadas. " +
+                      "Cada hoja contiene el detalle de las donaciones (Fecha de Alta, Descripción, Cantidad, Eliminado, Usuario Alta, Usuario Modificación). " +
+                      "Todos los filtros son opcionales y se pueden combinar."
     )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Excel generado exitosamente",
+            content = @Content(mediaType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        ),
+        @ApiResponse(responseCode = "500", description = "Error al generar el Excel")
+    })
     @GetMapping(value = "/excel", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<byte[]> generarExcel(
-            @Parameter(description = "Filtrar por categoría específica (ROPA, ALIMENTOS, JUGUETES, UTILES_ESCOLARES)")
+            @Parameter(
+                description = "Filtrar por categoría específica. Si no se especifica, incluye todas las categorías.",
+                example = "ROPA",
+                schema = @io.swagger.v3.oas.annotations.media.Schema(
+                    allowableValues = {"ROPA", "ALIMENTOS", "JUGUETES", "UTILES_ESCOLARES"}
+                )
+            )
             @RequestParam(required = false) String category,
             
-            @Parameter(description = "Filtrar por estado de eliminado (true/false)")
+            @Parameter(
+                description = "Filtrar por estado de eliminado. true = solo eliminadas, false = solo activas, null = todas",
+                example = "false"
+            )
             @RequestParam(required = false) Boolean deleted,
             
-            @Parameter(description = "Fecha desde (formato: yyyy-MM-dd)")
+            @Parameter(
+                description = "Fecha desde para filtrar por fecha de alta (formato ISO 8601: yyyy-MM-dd)",
+                example = "2025-01-01"
+            )
             @RequestParam(required = false) String dateFrom,
             
-            @Parameter(description = "Fecha hasta (formato: yyyy-MM-dd)")
+            @Parameter(
+                description = "Fecha hasta para filtrar por fecha de alta (formato ISO 8601: yyyy-MM-dd)",
+                example = "2025-12-31"
+            )
             @RequestParam(required = false) String dateTo
     ) {
         try {
