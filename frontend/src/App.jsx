@@ -13,6 +13,7 @@ import SolicitudesManagement from "./components/solicitudes/SolicitudesManagemen
 import EventosExternosManagement from "./components/eventos-externos/EventosExternosManagement";
 import DonationReportViewer from "./components/reports/DonationReportViewer";
 import EventsReportViewer from "./components/reports/EventsReportViewer";
+import PresidentesONGsViewer from "./components/reports/PresidentesONGsViewer";
 import Sidebar from "./components/layout/Sidebar";
 
 
@@ -59,6 +60,8 @@ const AppContent = () => {
         return <DonationReportViewer />;
       case "informe-eventos":
         return <EventsReportViewer />;
+      case "red-ongs":
+        return <PresidentesONGsViewer />;
       default:
         return <Dashboard />;
     }
