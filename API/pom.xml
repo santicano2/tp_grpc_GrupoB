@@ -108,6 +108,62 @@
 			<artifactId>protobuf-java</artifactId>
 			<version>${protobuf.version}</version>
 		</dependency>
+			<!-- =============================================== -->
+<!-- SOAP Client Dependencies -->
+<!-- =============================================== -->
+<dependency>
+	<groupId>org.springframework.boot</groupId>
+	<artifactId>spring-boot-starter-web-services</artifactId>
+	<exclusions>
+		<exclusion>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-tomcat</artifactId>
+		</exclusion>
+	</exclusions>
+</dependency>
+
+<!-- JAXB API for Java 17 -->
+<dependency>
+	<groupId>jakarta.xml.bind</groupId>
+	<artifactId>jakarta.xml.bind-api</artifactId>
+</dependency>
+
+<!-- JAXB Runtime -->
+<dependency>
+	<groupId>org.glassfish.jaxb</groupId>
+	<artifactId>jaxb-runtime</artifactId>
+</dependency>
+
+<!-- JAX-WS API for Java 17 -->
+<dependency>
+	<groupId>jakarta.xml.ws</groupId>
+	<artifactId>jakarta.xml.ws-api</artifactId>
+	<version>4.0.0</version>
+</dependency>
+
+<!-- JAX-WS Runtime Implementation -->
+<dependency>
+	<groupId>com.sun.xml.ws</groupId>
+	<artifactId>jaxws-rt</artifactId>
+	<version>4.0.0</version>
+	<scope>runtime</scope>
+</dependency>
+
+<!-- SOAP with Attachments API -->
+<dependency>
+	<groupId>jakarta.xml.soap</groupId>
+	<artifactId>jakarta.xml.soap-api</artifactId>
+	<version>3.0.0</version>
+</dependency>
+
+<!-- SAAJ Implementation -->
+<dependency>
+	<groupId>com.sun.xml.messaging.saaj</groupId>
+	<artifactId>saaj-impl</artifactId>
+	<version>3.0.0</version>
+	<scope>runtime</scope>
+</dependency>
+
 	</dependencies>
 
 	<build>
@@ -149,6 +205,64 @@
 					</execution>
 				</executions>
 			</plugin>
+				<!-- Plugin para generar clases Java desde WSDL -->
+<plugin>
+	<groupId>org.codehaus.mojo</groupId>
+	<artifactId>jaxws-maven-plugin</artifactId>
+	<version>2.6</version>
+	<executions>
+		<execution>
+			<id>wsimport</id>
+			<goals>
+				<goal>wsimport</goal>
+			</goals>
+			<configuration>
+				<wsdlDirectory>${project.basedir}/src/main/resources/wsdl</wsdlDirectory>
+				<wsdlFiles>
+					<wsdlFile>servicio.wsdl</wsdlFile>
+				</wsdlFiles>
+				<packageName>com.example.api.soap.generated</packageName>
+				<sourceDestDir>${project.build.directory}/generated-sources/jaxws</sourceDestDir>
+				<keep>true</keep>
+				<verbose>true</verbose>
+				<extension>true</extension>
+				<!-- Configuración para Java 17 -->
+				<vmArgs>
+					<vmArg>--add-opens</vmArg>
+					<vmArg>java.xml/com.sun.org.apache.xerces.internal.jaxp=ALL-UNNAMED</vmArg>
+				</vmArgs>
+			</configuration>
+		</execution>
+	</executions>
+	<dependencies>
+		<dependency>
+			<groupId>com.sun.xml.ws</groupId>
+			<artifactId>jaxws-tools</artifactId>
+			<version>4.0.0</version>
+		</dependency>
+	</dependencies>
+</plugin>
+		<!-- Plugin para añadir el directorio de código generado al source path -->
+<plugin>
+	<groupId>org.codehaus.mojo</groupId>
+	<artifactId>build-helper-maven-plugin</artifactId>
+	<version>3.3.0</version>
+	<executions>
+		<execution>
+			<id>add-source</id>
+			<phase>generate-sources</phase>
+			<goals>
+				<goal>add-source</goal>
+			</goals>
+			<configuration>
+				<sources>
+					<source>${project.build.directory}/generated-sources/jaxws</source>
+				</sources>
+			</configuration>
+		</execution>
+	</executions>
+</plugin>
+
 
 		</plugins>
 	</build>
