@@ -1,4 +1,4 @@
-package com.example.api.rest.controller;
+package com.example.web_services.controller;
 
 import java.util.List;
 
@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.api.rest.dto.FiltroDTO;
-import com.example.api.rest.service.FiltroService;
+import com.example.web_services.dto.FiltroDTO;
+import com.example.web_services.service.FiltroService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

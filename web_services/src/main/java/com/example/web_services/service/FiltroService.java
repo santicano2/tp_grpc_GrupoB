@@ -1,6 +1,6 @@
-package com.example.api.rest.service;
+package com.example.web_services.service;
 
-import com.example.api.rest.dto.FiltroDTO;
+import com.example.web_services.dto.FiltroDTO;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;

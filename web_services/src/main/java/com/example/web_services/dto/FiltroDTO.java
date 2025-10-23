@@ -1,4 +1,4 @@
-package com.example.api.rest.dto;
+package com.example.web_services.dto;
 
 public class FiltroDTO {
     private Long id;

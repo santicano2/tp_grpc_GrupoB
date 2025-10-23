@@ -1,4 +1,4 @@
-package com.example.api.rest.controller;
+package com.example.web_services.controller;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.api.rest.service.DonacionReporteService;
+import com.example.web_services.service.DonacionReporteService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
