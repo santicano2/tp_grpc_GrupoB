@@ -2,13 +2,13 @@ package com.example.api.service;
 
 import java.time.Instant;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.example.api.dto.EventDTO;
 import com.google.protobuf.Empty;
 
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import ong.events.EventosServiceGrpc;
 import ong.events.Events;
 
@@ -20,10 +20,8 @@ public class EventoClientService {
 
     private final EventosServiceGrpc.EventosServiceBlockingStub stub;
 
-    public EventoClientService() {
-        ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 50051)
-                .usePlaintext()
-                .build();
+    @Autowired
+    public EventoClientService(ManagedChannel channel) {
         this.stub = EventosServiceGrpc.newBlockingStub(channel);
     }
 

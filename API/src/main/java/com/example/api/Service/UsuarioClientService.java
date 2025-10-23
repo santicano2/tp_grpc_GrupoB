@@ -1,11 +1,11 @@
 package com.example.api.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.example.api.dto.UserDTO;
 
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import ong.users.Users;
 import ong.users.UsuariosServiceGrpc;
 
@@ -14,10 +14,8 @@ public class UsuarioClientService {
 
     private final UsuariosServiceGrpc.UsuariosServiceBlockingStub stub;
 
-    public UsuarioClientService() {
-        ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 50051)
-                .usePlaintext()
-                .build();
+    @Autowired
+    public UsuarioClientService(ManagedChannel channel) {
         this.stub = UsuariosServiceGrpc.newBlockingStub(channel);
     }
 

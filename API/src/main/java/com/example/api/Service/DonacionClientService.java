@@ -1,12 +1,12 @@
 package com.example.api.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.example.api.dto.DonationItemDTO;
 import com.google.protobuf.Empty;
 
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import ong.inventory.DonacionesServiceGrpc;
 import ong.inventory.Inventory;
 
@@ -15,10 +15,8 @@ public class DonacionClientService {
 
     private final DonacionesServiceGrpc.DonacionesServiceBlockingStub stub;
 
-    public DonacionClientService() {
-        ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 50051)
-                .usePlaintext()
-                .build();
+    @Autowired
+    public DonacionClientService(ManagedChannel channel) {
         this.stub = DonacionesServiceGrpc.newBlockingStub(channel);
     }
 
