@@ -279,7 +279,7 @@ export default function DonationReportViewer() {
       if (filters.dateTo) queryParams.append("date_to", filters.dateTo);
 
       const response = await fetch(
-        `http://localhost:8080/reporte/excel?${queryParams.toString()}`
+        `http://localhost:8082/reporte/excel?${queryParams.toString()}`
       );
 
       if (!response.ok) {
