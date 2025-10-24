@@ -95,6 +95,7 @@ Sistema de gestión para ONG "Empuje Comunitario" desarrollado con **gRPC**, **K
 - **Kafka**: localhost:9092
 - **phpMyAdmin**: http://localhost:8081
 - **Swagger UI**: http://localhost:8080/swagger-ui.html
+- **Swagger para pruebas REST**: http://localhost:8082/swagger-ui.html
 
 ## Prerrequisitos
 
@@ -122,15 +123,7 @@ Sistema de gestión para ONG "Empuje Comunitario" desarrollado con **gRPC**, **K
    docker-compose up -d
    ```
 
-3. **Iniciar API**:
-
-   ```bash
-   cd API
-   ./mvnw compile        # Generar clases gRPC
-   ./mvnw spring-boot:run
-   ```
-
-4. **Iniciar FrontEnd**:
+3. **Iniciar FrontEnd**:
 
    ```bash
    cd frontend
@@ -138,7 +131,7 @@ Sistema de gestión para ONG "Empuje Comunitario" desarrollado con **gRPC**, **K
    npm run dev
    ```
 
-5. **Detener el sistema**:
+4. **Detener el sistema**:
    ```bash
    docker-compose down
    ```
@@ -154,7 +147,7 @@ Sistema de gestión para ONG "Empuje Comunitario" desarrollado con **gRPC**, **K
 
 ## Documentación de APIs
 
-- **Swagger UI (REST)**: http://localhost:8080/swagger-ui.html
+- **Swagger UI (REST)**: http://localhost:8080/swagger-ui.html / http://localhost:8082/swagger-ui.html
   - Documentación interactiva de endpoints REST
   - Incluye: Filtros guardados, Reportes Excel, Consulta Red de ONGs (SOAP)
 - **GraphQL Playground**: http://localhost:8000/graphql
