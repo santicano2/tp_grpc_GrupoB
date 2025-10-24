@@ -13,7 +13,6 @@ import com.example.web_services.service.DonacionReporteService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -32,8 +31,8 @@ public class DonacionReporteController {
     @Operation(
         summary = "Generar Excel de donaciones con filtros",
         description = "Genera un archivo Excel con las donaciones agrupadas por categoría en hojas separadas. " +
-                      "Cada hoja contiene el detalle de las donaciones (Fecha de Alta, Descripción, Cantidad, Eliminado, Usuario Alta, Usuario Modificación). " +
-                      "Todos los filtros son opcionales y se pueden combinar."
+                    "Cada hoja contiene el detalle de las donaciones (Fecha de Alta, Descripción, Cantidad, Eliminado, Usuario Alta, Usuario Modificación). " +
+                    "Todos los filtros son opcionales y se pueden combinar."
     )
     @ApiResponses(value = {
         @ApiResponse(
@@ -43,7 +42,7 @@ public class DonacionReporteController {
         ),
         @ApiResponse(responseCode = "500", description = "Error al generar el Excel")
     })
-    @GetMapping(value = "/excel", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @GetMapping(value = "/excel", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     public ResponseEntity<byte[]> generarExcel(
             @Parameter(
                 description = "Filtrar por categoría específica. Si no se especifica, incluye todas las categorías.",
@@ -77,7 +76,7 @@ public class DonacionReporteController {
 
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=donaciones.xlsx")
-                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                     .body(excelBytes);
 
         } catch (Exception e) {
