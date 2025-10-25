@@ -2,15 +2,15 @@ package com.example.web_services.dto;
 
 public class FiltroDTO {
     private Long id;
-    private String nombreFiltro;
+    private String nombre;
     private String usuario;
     private String criteriosJson; // guardamos los filtros como JSON
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
-    public String getNombreFiltro() { return nombreFiltro; }
-    public void setNombreFiltro(String nombreFiltro) { this.nombreFiltro = nombreFiltro; }
+    public String getNombre() { return nombre; }
+    public void setNombre(String nombre) { this.nombre = nombre; }
 
     public String getUsuario() { return usuario; }
     public void setUsuario(String usuario) { this.usuario = usuario; }

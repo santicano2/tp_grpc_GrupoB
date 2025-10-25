@@ -1,37 +1,73 @@
 package com.example.web_services.service;
 
-import com.example.web_services.dto.FiltroDTO;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.example.web_services.dto.FiltroDTO;
+import com.example.web_services.entity.FiltroGuardado;
+import com.example.web_services.entity.FiltroGuardado.TipoFiltro;
+import com.example.web_services.repository.FiltroGuardadoRepository;
 
 @Service
 public class FiltroService {
 
-    private final List<FiltroDTO> filtros = new ArrayList<>();
+    private final FiltroGuardadoRepository repository;
 
-    public List<FiltroDTO> listarFiltros() {
-        return filtros;
+    public FiltroService(FiltroGuardadoRepository repository) {
+        this.repository = repository;
     }
 
-    public FiltroDTO guardarFiltro(FiltroDTO filtro) {
-        filtro.setId((long)(filtros.size()+1));
-        filtros.add(filtro);
-        return filtro;
+//      MAPEOS
+    private FiltroDTO toDTO(FiltroGuardado entidad) {
+        FiltroDTO dto = new FiltroDTO();
+        dto.setId(entidad.getId());
+        dto.setNombre(entidad.getNombre());
+        dto.setCriteriosJson(entidad.getFiltrosJson());
+        return dto;
     }
 
-    public boolean eliminarFiltro(Long id) {
-        return filtros.removeIf(f -> f.getId().equals(id));
+    private FiltroGuardado toEntity(FiltroDTO dto) {
+        FiltroGuardado entidad = new FiltroGuardado();
+        entidad.setId(dto.getId());
+        entidad.setNombre(dto.getNombre());
+        entidad.setFiltrosJson(dto.getCriteriosJson()); 
+        entidad.setTipo(TipoFiltro.EVENTOS);
+        return entidad;
     }
 
-    public FiltroDTO actualizarFiltro(FiltroDTO filtro) {
-        for(int i=0;i<filtros.size();i++){
-            if(filtros.get(i).getId().equals(filtro.getId())){
-                filtros.set(i, filtro);
-                return filtro;
-            }
+//      METODOS
+    public List<FiltroDTO> listarFiltros(Long usuarioId) {
+        List<FiltroGuardado> entidades = repository.findByUsuarioId(usuarioId);
+        return entidades.stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    public FiltroDTO guardarFiltro(FiltroDTO filtro, Long usuarioId) {
+        FiltroGuardado entidad = toEntity(filtro);
+        entidad.setUsuarioId(usuarioId);
+        entidad.setId(null);
+        FiltroGuardado entidadGuardada = repository.save(entidad);
+        return toDTO(entidadGuardada);
+    }
+
+    public boolean eliminarFiltro(Long id, Long usuarioId) {
+        if (repository.existsByIdAndUsuarioId(id, usuarioId)) {
+            repository.deleteById(id);
+            return true;
         }
-        return null;
+        return false;
+    }
+
+    public FiltroDTO actualizarFiltro(FiltroDTO filtro, Long usuarioId) {
+        if (filtro.getId() == null || !repository.existsByIdAndUsuarioId(filtro.getId(), usuarioId)) {
+            return null; 
+        }
+        FiltroGuardado entidad = toEntity(filtro);
+        entidad.setUsuarioId(usuarioId);
+        FiltroGuardado entidadActualizada = repository.save(entidad);
+        return toDTO(entidadActualizada);
     }
 }

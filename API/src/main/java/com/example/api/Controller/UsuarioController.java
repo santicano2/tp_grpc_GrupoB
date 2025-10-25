@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.api.dto.CreateUserResponseDTO;
 import com.example.api.dto.LoginResponseDTO;
 import com.example.api.dto.UserDTO;
+import com.example.api.service.JwtUtilService;
 import com.example.api.service.UsuarioClientService;
 
 import ong.users.Users;
@@ -28,9 +29,11 @@ import ong.users.Users;
 public class UsuarioController {
 
     private final UsuarioClientService usuarioClientService;
+    private final JwtUtilService jwtUtilService;
 
-    public UsuarioController(UsuarioClientService usuarioClientService) {
+    public UsuarioController(UsuarioClientService usuarioClientService, JwtUtilService jwtUtilService) {
         this.usuarioClientService = usuarioClientService;
+        this.jwtUtilService = jwtUtilService;
     }
 
     @PostMapping("/login")
@@ -39,12 +42,16 @@ public class UsuarioController {
         LoginResponseDTO dto = new LoginResponseDTO();
         dto.setOk(response.getOk());
         dto.setMessage(response.getMessage());
-        if (response.hasUser()) {
+        if (response.getOk() && response.hasUser()) {
             dto.setUsername(response.getUser().getUsername());
             dto.setName(response.getUser().getName());
             dto.setLastname(response.getUser().getLastname());
             dto.setEmail(response.getUser().getEmail());
             dto.setRole(response.getUser().getRole().name());
+            //Crea el token para guardar el usuario
+            long usuarioId = response.getUser().getId(); 
+            String token = jwtUtilService.generateToken(usuarioId, response.getUser().getUsername(), response.getUser().getRole().name());
+            dto.setToken(token);
         }
         return dto;
     }

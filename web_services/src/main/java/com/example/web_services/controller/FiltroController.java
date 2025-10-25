@@ -2,7 +2,10 @@ package com.example.web_services.controller;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,6 +20,7 @@ import com.example.web_services.service.FiltroService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -41,10 +45,21 @@ public class FiltroController {
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Lista de filtros obtenida exitosamente",
-            content = @Content(schema = @Schema(implementation = FiltroDTO.class)))
+            content = @Content(schema = @Schema(implementation = FiltroDTO.class))),
+            @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
-    public List<FiltroDTO> listarFiltros() {
-        return service.listarFiltros();
+    public ResponseEntity<List<FiltroDTO>> listarFiltros(@AuthenticationPrincipal UserDetails userDetails,
+        @Parameter(in = ParameterIn.HEADER, name = "X-Test-User-ID", 
+                description = "PARA PRUEBAS: Busca los filtros del usuario por su ID.")
+        String testUserIdHeader) {
+        try {
+            Long usuarioId = Long.parseLong(userDetails.getUsername());
+            List<FiltroDTO> filtros = service.listarFiltros(usuarioId);
+            return ResponseEntity.ok(filtros);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @PostMapping
@@ -53,14 +68,27 @@ public class FiltroController {
         description = "Guarda un nuevo filtro personalizado con los criterios de búsqueda especificados"
     )
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Filtro guardado exitosamente",
+        @ApiResponse(responseCode = "201", description = "Filtro guardado exitosamente",
             content = @Content(schema = @Schema(implementation = FiltroDTO.class))),
-        @ApiResponse(responseCode = "400", description = "Datos del filtro inválidos")
+        @ApiResponse(responseCode = "400", description = "Datos del filtro inválidos"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
-    public FiltroDTO guardarFiltro(
+    public ResponseEntity<FiltroDTO> guardarFiltro(
         @Parameter(description = "Datos del filtro a guardar", required = true)
-        @RequestBody FiltroDTO filtro) {
-        return service.guardarFiltro(filtro);
+        @RequestBody FiltroDTO filtro,
+        @AuthenticationPrincipal UserDetails userDetails,
+        @Parameter(in = ParameterIn.HEADER, name = "X-Test-User-ID", 
+                description = "PARA PRUEBAS: Busca los filtros del usuario por su ID.")
+        String testUserIdHeader) {
+        try {
+            Long usuarioId = Long.parseLong(userDetails.getUsername());
+            FiltroDTO filtroGuardado = service.guardarFiltro(filtro, usuarioId);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(filtroGuardado);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @PutMapping
@@ -72,12 +100,28 @@ public class FiltroController {
         @ApiResponse(responseCode = "200", description = "Filtro actualizado exitosamente",
             content = @Content(schema = @Schema(implementation = FiltroDTO.class))),
         @ApiResponse(responseCode = "404", description = "Filtro no encontrado"),
-        @ApiResponse(responseCode = "400", description = "Datos del filtro inválidos")
+        @ApiResponse(responseCode = "400", description = "Datos del filtro inválidos"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
-    public FiltroDTO actualizarFiltro(
+    public ResponseEntity<FiltroDTO> actualizarFiltro(
         @Parameter(description = "Datos actualizados del filtro", required = true)
-        @RequestBody FiltroDTO filtro) {
-        return service.actualizarFiltro(filtro);
+        @RequestBody FiltroDTO filtro,
+        @AuthenticationPrincipal UserDetails userDetails,
+        @Parameter(in = ParameterIn.HEADER, name = "X-Test-User-ID", 
+                description = "PARA PRUEBAS: Busca los filtros del usuario por su ID.")
+        String testUserIdHeader) {
+        try {
+            Long usuarioId = Long.parseLong(userDetails.getUsername());
+            FiltroDTO filtroActualizado = service.actualizarFiltro(filtro, usuarioId);
+            
+            if (filtroActualizado == null) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok(filtroActualizado);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @DeleteMapping("/{id}")
@@ -86,13 +130,27 @@ public class FiltroController {
         description = "Elimina un filtro personalizado guardado por su ID"
     )
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Filtro eliminado exitosamente"),
-        @ApiResponse(responseCode = "404", description = "Filtro no encontrado")
+        @ApiResponse(responseCode = "204", description = "Filtro eliminado exitosamente"),
+        @ApiResponse(responseCode = "404", description = "Filtro no encontrado"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
-    public ResponseEntity<Boolean> eliminarFiltro(
-        @Parameter(description = "ID del filtro a eliminar", required = true, example = "1")
-        @PathVariable Long id) {
-        boolean result = service.eliminarFiltro(id);
-        return ResponseEntity.ok(result);
+    public ResponseEntity<Void> eliminarFiltro(@PathVariable Long id,
+        @AuthenticationPrincipal UserDetails userDetails,
+        @Parameter(in = ParameterIn.HEADER, name = "X-Test-User-ID", 
+                description = "PARA PRUEBAS: Busca los filtros del usuario por su ID.")
+        String testUserIdHeader) {
+        try {
+            Long usuarioId = Long.parseLong(userDetails.getUsername());
+            boolean result = service.eliminarFiltro(id, usuarioId);
+            if (result) {
+                // Se eliminó con éxito
+                return ResponseEntity.ok().build(); 
+            } else {
+                return ResponseEntity.notFound().build(); 
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
     }
 }

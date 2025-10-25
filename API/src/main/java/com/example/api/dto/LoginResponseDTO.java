@@ -8,6 +8,7 @@ public class LoginResponseDTO {
 	private String lastname;
 	private String email;
 	private String role;
+	private String token;
 
 	public boolean isOk() { return ok; }
 	public void setOk(boolean ok) { this.ok = ok; }
@@ -29,4 +30,7 @@ public class LoginResponseDTO {
 
 	public String getRole() { return role; }
 	public void setRole(String role) { this.role = role; }
+
+	public String getToken() { return token; }
+	public void setToken(String token) { this.token = token; }
 }
