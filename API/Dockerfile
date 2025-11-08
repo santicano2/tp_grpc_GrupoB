@@ -11,7 +11,7 @@ COPY src ./src
 
 RUN mvn clean package -DskipTests -Dos.detected.classifier=linux-x86_64
 
-FROM openjdk:17-jdk-slim
+FROM eclipse-temurin:17-jre-alpine
 
 WORKDIR /app
 

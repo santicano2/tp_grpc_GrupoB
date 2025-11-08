@@ -11,13 +11,11 @@ COPY src ./src
 
 RUN mvn clean package -DskipTests
 
-FROM openjdk:17-jdk-slim
+FROM eclipse-temurin:17-jre-alpine
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    libfreetype6 \
+RUN apk add --no-cache \
     fontconfig \
-    && rm -rf /var/lib/apt/lists/*
+    ttf-dejavu
 
 WORKDIR /app
 
