@@ -98,6 +98,29 @@ def filter_donations(donations, f: DonationReportFilter):
         filtered.append(d)
     return filtered
 
+# === RESPUESTAS A OFERTAS TYPES ===
+@strawberry.type
+class DonacionSolicitada:
+    categoria: str
+    descripcion: str
+    cantidad: str
+
+@strawberry.type
+class SolicitudOferta:
+    id_organizacion_solicitante: str
+    fecha_solicitud: str
+    procesada: bool
+    donaciones: List[DonacionSolicitada]
+
+@strawberry.type
+class RespuestaOferta:
+    id_oferta: str
+    solicitudes: List[SolicitudOferta]
+
+@strawberry.type
+class RespuestasOfertasReport:
+    ofertas: List[RespuestaOferta]
+
 @strawberry.type
 class Query:
 
@@ -179,6 +202,52 @@ class Query:
             created_at=d.created_at, created_by=d.created_by, updated_at=d.updated_at, updated_by=d.updated_by
         ) for d in donations]
         return DonationReport(summary=summary, details=details)
+
+    @strawberry.field
+    def respuestas_ofertas_report(self, info, actor_username: str) -> RespuestasOfertasReport:
+        """Obtiene las respuestas/solicitudes a nuestras ofertas agrupadas por ID de oferta"""
+        import requests
+        
+        # solo PRESIDENTE o VOCAL pueden ver el informe
+        user: User = db.find_user_by_login(actor_username)
+        if not user or not user.active or not can_manage_inventory(user.role):
+            raise Exception("No autorizado: solo PRESIDENTE o VOCAL pueden acceder a este informe.")
+        
+        # Llamar al Kafka Server para obtener los datos
+        try:
+            response = requests.get("http://kafka-server:8090/respuestas-ofertas", timeout=10.0)
+            response.raise_for_status()
+            data = response.json()
+            
+            # Transformar los datos al formato GraphQL
+            ofertas = []
+            for oferta_data in data.get("respuestasOfertas", []):
+                solicitudes = []
+                for sol_data in oferta_data.get("solicitudes", []):
+                    donaciones = [
+                        DonacionSolicitada(
+                            categoria=don.get("categoria"),
+                            descripcion=don.get("descripcion"),
+                            cantidad=don.get("cantidad")
+                        )
+                        for don in sol_data.get("donaciones", [])
+                    ]
+                    solicitudes.append(SolicitudOferta(
+                        id_organizacion_solicitante=sol_data.get("idOrganizacionSolicitante"),
+                        fecha_solicitud=sol_data.get("fechaSolicitud"),
+                        procesada=sol_data.get("procesada", False),
+                        donaciones=donaciones
+                    ))
+                
+                ofertas.append(RespuestaOferta(
+                    id_oferta=oferta_data.get("idOferta"),
+                    solicitudes=solicitudes
+                ))
+            
+            return RespuestasOfertasReport(ofertas=ofertas)
+            
+        except Exception as e:
+            raise Exception(f"Error obteniendo respuestas a ofertas: {str(e)}")
 
 @strawberry.type
 class Mutation:
