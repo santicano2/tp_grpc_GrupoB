@@ -14,8 +14,8 @@ import EventosExternosManagement from "./components/eventos-externos/EventosExte
 import DonationReportViewer from "./components/reports/DonationReportViewer";
 import EventsReportViewer from "./components/reports/EventsReportViewer";
 import PresidentesONGsViewer from "./components/reports/PresidentesONGsViewer";
+import RespuestasOfertasViewer from "./components/reports/RespuestasOfertasViewer";
 import Sidebar from "./components/layout/Sidebar";
-
 
 const AppContent = () => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -39,7 +39,7 @@ const AppContent = () => {
   }
 
   if (!isAuthenticated) {
-    return <Login />; 
+    return <Login />;
   }
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
@@ -47,13 +47,13 @@ const AppContent = () => {
   const renderContent = () => {
     switch (activeSection) {
       case "users":
-        return <UserManagement />; 
+        return <UserManagement />;
       case "inventory":
         return <InventoryManagement />;
       case "events":
         return <EventManagement />;
-      case "solicitudes": 
-        return <SolicitudesManagement />; 
+      case "solicitudes":
+        return <SolicitudesManagement />;
       case "eventos-externos":
         return <EventosExternosManagement />;
       case "donation-report":
@@ -62,6 +62,8 @@ const AppContent = () => {
         return <EventsReportViewer />;
       case "red-ongs":
         return <PresidentesONGsViewer />;
+      case "respuestas-ofertas":
+        return <RespuestasOfertasViewer />;
       default:
         return <Dashboard />;
     }

@@ -1,4 +1,17 @@
-import { Users, Package, Calendar, Home, LogOut, Menu, X, Send, Globe, FileText, CalendarCheck, Network } from "lucide-react";
+import {
+  Users,
+  Package,
+  Calendar,
+  Home,
+  LogOut,
+  Menu,
+  X,
+  Send,
+  Globe,
+  FileText,
+  CalendarCheck,
+  Network,
+} from "lucide-react";
 
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -31,35 +44,41 @@ const Sidebar = ({ isOpen, onToggle, activeSection, onSectionChange }) => {
       roles: ["PRESIDENTE", "COORDINADOR", "VOLUNTARIO"],
     },
     {
-    id: "solicitudes",
-    label: "Solicitudes",
-    icon: Send,
-    roles: ["PRESIDENTE", "VOCAL", "COORDINADOR", "VOLUNTARIO"],
-  },
-  {
-  id: "eventos-externos",
-  label: "Eventos Externos",
-  icon: Globe,
-  roles: ["PRESIDENTE", "VOCAL", "COORDINADOR", "VOLUNTARIO"],
-},
-{
-  id: "donation-report",
-  label: "Informe de Donaciones",
-  icon: FileText,
-  roles: ["PRESIDENTE", "VOCAL"],
-},
-{
-  id: "informe-eventos",
-  label: "Informe de Eventos",
-  icon: CalendarCheck,
-  roles: ["PRESIDENTE", "VOCAL", "COORDINADOR", "VOLUNTARIO"],
-},
-{
-  id: "red-ongs",
-  label: "Red de ONGs",
-  icon: Network,
-  roles: ["PRESIDENTE"],
-},
+      id: "solicitudes",
+      label: "Solicitudes",
+      icon: Send,
+      roles: ["PRESIDENTE", "VOCAL", "COORDINADOR", "VOLUNTARIO"],
+    },
+    {
+      id: "eventos-externos",
+      label: "Eventos Externos",
+      icon: Globe,
+      roles: ["PRESIDENTE", "VOCAL", "COORDINADOR", "VOLUNTARIO"],
+    },
+    {
+      id: "donation-report",
+      label: "Informe de Donaciones",
+      icon: FileText,
+      roles: ["PRESIDENTE", "VOCAL"],
+    },
+    {
+      id: "informe-eventos",
+      label: "Informe de Eventos",
+      icon: CalendarCheck,
+      roles: ["PRESIDENTE", "VOCAL", "COORDINADOR", "VOLUNTARIO"],
+    },
+    {
+      id: "red-ongs",
+      label: "Red de ONGs",
+      icon: Network,
+      roles: ["PRESIDENTE"],
+    },
+    {
+      id: "respuestas-ofertas",
+      label: "Respuestas a Ofertas",
+      icon: Package,
+      roles: ["PRESIDENTE", "VOCAL"],
+    },
   ];
 
   const filteredMenuItems = menuItems.filter(
