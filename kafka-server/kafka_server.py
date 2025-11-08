@@ -305,6 +305,48 @@ def mark_external_event_as_deleted(org_id, evento_id):
             cursor.close()
             connection.close()
 
+def save_response_to_offer(data):
+    """Guarda una respuesta/solicitud a nuestra oferta de donaciones"""
+    try:
+        connection = get_db_connection()
+        if not connection:
+            return False
+            
+        cursor = connection.cursor()
+        
+        id_oferta = data.get('idOferta') or data.get('id_oferta')
+        id_org_solicitante = data.get('idOrganizacionSolicitante') or data.get('id_organizacion_solicitante')
+        donaciones = data.get('donaciones', [])
+        
+        for donacion in donaciones:
+            query = """
+                INSERT INTO respuestas_ofertas 
+                (id_oferta, id_organizacion_solicitante, categoria, descripcion, cantidad, procesada)
+                VALUES (%s, %s, %s, %s, %s, FALSE)
+            """
+            
+            cursor.execute(query, (
+                id_oferta,
+                id_org_solicitante,
+                donacion.get('categoria'),
+                donacion.get('descripcion'),
+                donacion.get('cantidad')
+            ))
+        
+        connection.commit()
+        logger.info(f"✅ Respuesta a oferta guardada: {id_oferta} de org {id_org_solicitante} con {len(donaciones)} donaciones")
+        return True
+        
+    except Error as e:
+        logger.error(f"❌ Error guardando respuesta a oferta: {e}")
+        if connection:
+            connection.rollback()
+        return False
+    finally:
+        if connection and connection.is_connected():
+            cursor.close()
+            connection.close()
+
 # =================== ENDPOINTS API REST ===================
 
 @app.get("/")
@@ -677,6 +719,83 @@ async def get_transferencias_recibidas():
             cursor.close()
             connection.close()
 
+@app.get("/respuestas-ofertas")
+async def get_respuestas_ofertas():
+    """Obtiene las respuestas/solicitudes a nuestras ofertas agrupadas por ID de oferta"""
+    try:
+        connection = get_db_connection()
+        if not connection:
+            raise HTTPException(status_code=500, detail="Error de conexion a BD")
+            
+        cursor = connection.cursor(dictionary=True)
+        
+        query = """
+            SELECT 
+                r.id,
+                r.id_oferta,
+                r.id_organizacion_solicitante,
+                r.categoria,
+                r.descripcion,
+                r.cantidad,
+                r.fecha_solicitud,
+                r.procesada
+            FROM respuestas_ofertas r
+            ORDER BY r.id_oferta, r.fecha_solicitud DESC
+        """
+        
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        
+        # Agrupar por oferta
+        ofertas_dict = {}
+        for row in rows:
+            oferta_id = str(row['id_oferta'])
+            
+            if oferta_id not in ofertas_dict:
+                ofertas_dict[oferta_id] = {
+                    'idOferta': oferta_id,
+                    'solicitudes': []
+                }
+            
+            # Buscar si ya existe una solicitud de esta organización
+            solicitud_existente = next(
+                (s for s in ofertas_dict[oferta_id]['solicitudes'] 
+                 if s['idOrganizacionSolicitante'] == row['id_organizacion_solicitante']),
+                None
+            )
+            
+            if solicitud_existente:
+                # Agregar donación a solicitud existente
+                solicitud_existente['donaciones'].append({
+                    'categoria': row['categoria'],
+                    'descripcion': row['descripcion'],
+                    'cantidad': row['cantidad']
+                })
+            else:
+                # Crear nueva solicitud
+                ofertas_dict[oferta_id]['solicitudes'].append({
+                    'idOrganizacionSolicitante': row['id_organizacion_solicitante'],
+                    'fechaSolicitud': row['fecha_solicitud'].isoformat() if row['fecha_solicitud'] else None,
+                    'procesada': row['procesada'],
+                    'donaciones': [{
+                        'categoria': row['categoria'],
+                        'descripcion': row['descripcion'],
+                        'cantidad': row['cantidad']
+                    }]
+                })
+        
+        ofertas_list = list(ofertas_dict.values())
+        
+        return {"respuestasOfertas": ofertas_list}
+        
+    except Exception as e:
+        logger.error(f"Error obteniendo respuestas a ofertas: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if connection and connection.is_connected():
+            cursor.close()
+            connection.close()
+
 # =================== CONSUMIDORES KAFKA ===================
 
 def process_solicitud_donaciones(message):
@@ -889,6 +1008,22 @@ def process_adhesion_evento(message):
     except Exception as e:
         logger.error(f"Error procesando adhesión: {e}")
 
+def process_response_to_offer(message):
+    """Procesa mensajes del topic respuesta-oferta-{id_organizacion}"""
+    try:
+        data = message.value
+        id_oferta = data.get('idOferta') or data.get('id_oferta')
+        id_org_solicitante = data.get('idOrganizacionSolicitante') or data.get('id_organizacion_solicitante')
+        donaciones = data.get('donaciones', [])
+        
+        logger.info(f"📬 Respuesta a oferta {id_oferta} de organización {id_org_solicitante} con {len(donaciones)} donaciones")
+        
+        # Guardar en base de datos
+        save_response_to_offer(data)
+        
+    except Exception as e:
+        logger.error(f"❌ Error procesando respuesta a oferta: {e}")
+
 def start_kafka_consumers():
     """Inicia los consumidores de Kafka en hilos separados"""
     
@@ -927,6 +1062,8 @@ def start_kafka_consumers():
         (None, process_transferencia_donaciones, "transferencias", r'^transferencia-donaciones-.*'),
         # Pattern para capturar todos los topics de adhesiones (adhesion-evento-*)
         (None, process_adhesion_evento, "adhesiones", r'^adhesion-evento-.*'),
+        # Pattern para capturar respuestas a nuestras ofertas (respuesta-oferta-*)
+        (None, process_response_to_offer, "respuestas_ofertas", r'^respuesta-oferta-.*'),
     ]
     
     for topics, processor, group_suffix, pattern in consumers:
