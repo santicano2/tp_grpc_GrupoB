@@ -57,6 +57,21 @@ class Event:
     members: List[str] = field(default_factory=list)
     deleted: bool = False
 
+@dataclass
+class Aspirante:
+    id: int
+    nombre: str
+    apellido: str
+    edad: int | None
+    telefono: str | None
+    email: str
+    motivo: str
+    estado: str  # PENDIENTE, ACEPTADO, RECHAZADO
+    motivo_rechazo: str | None = None
+    fecha_solicitud: str | None = None
+    fecha_procesamiento: str | None = None
+    procesado_por: str | None = None
+
 class DatabaseStorage:    
 
     # ===== FILTROS GUARDADOS =====
@@ -105,17 +120,17 @@ class DatabaseStorage:
         self._users_by_email = {}
     
     def _hash_password(self, password: str) -> str:
-        """Encriptar contraseña con bcrypt"""
+        """Encriptar contraseÃ±a con bcrypt"""
         salt = bcrypt.gensalt()
         hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
         return hashed.decode('utf-8')
     
     def _verify_password(self, password: str, hashed: str) -> bool:
-        """Verificar contraseña"""
+        """Verificar contraseÃ±a"""
         return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
     
     def _generate_password(self, length: int = 8) -> str:
-        """Generar contraseña aleatoria"""
+        """Generar contraseÃ±a aleatoria"""
         characters = string.ascii_letters + string.digits + "!@#$%&*"
         return ''.join(secrets.choice(characters) for _ in range(length))
     
@@ -136,7 +151,7 @@ class DatabaseStorage:
             if existing_user:
                 raise ValueError("Nombre de usuario o email ya existe")
             
-            # Si no tiene contraseña, generar una
+            # Si no tiene contraseÃ±a, generar una
             if not u.pw_hash:
                 plain_password = self._generate_password()
                 u.pw_hash = self._hash_password(plain_password)
@@ -227,13 +242,13 @@ class DatabaseStorage:
     
     # ===== DONACIONES =====
     def create_donation(self, d: Donation):
-        """Crear donación"""
+        """Crear donaciÃ³n"""
         try:
             # Obtener usuario por username para el campo usuario_alta
             creator = self.find_user_by_login(d.created_by)
             creator_id = creator.id if creator else 1
             
-            print(f"[DEBUG] Insertando donación con categoría: '{d.category}'")
+            print(f"[DEBUG] Insertando donaciÃ³n con categorÃ­a: '{d.category}'")
             query = """
                 INSERT INTO inventario (categoria, descripcion, cantidad, usuario_alta)
                 VALUES (%s, %s, %s, %s)
@@ -355,5 +370,144 @@ class DatabaseStorage:
             return events_dict
         except Exception:
             return {}
+
+# ===== ASPIRANTES =====
+    def create_aspirante(self, a):
+        """Crear aspirante - validación de email duplicado se hace por trigger"""
+        try:
+            query = """
+                INSERT INTO aspirantes (nombre, apellido, edad, telefono, email, motivo)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """
+            aspirante_id = self.db.execute_insert(query, (
+                a.nombre, a.apellido, a.edad, a.telefono, a.email, a.motivo
+            ))
+            
+            a.id = aspirante_id
+            a.estado = 'PENDIENTE'
+            return a
+            
+        except Exception as e:
+            error_msg = str(e)
+            if 'email ya está registrado' in error_msg or 'Duplicate entry' in error_msg:
+                raise ValueError("El email ya está registrado como usuario")
+            raise ValueError(error_msg)
+    
+    def get_aspirante_by_id(self, aspirante_id: int):
+        """Obtener aspirante por ID"""
+        try:
+            query = """
+                SELECT a.*, u.nombre_usuario as procesado_por_username
+                FROM aspirantes a
+                LEFT JOIN usuarios u ON a.procesado_por = u.id
+                WHERE a.id = %s
+            """
+            results = self.db.execute_query(query, (aspirante_id,))
+            
+            if results:
+                from .storage import Aspirante
+                row = results[0]
+                return Aspirante(
+                    id=row['id'],
+                    nombre=row['nombre'],
+                    apellido=row['apellido'],
+                    edad=row['edad'],
+                    telefono=row['telefono'],
+                    email=row['email'],
+                    motivo=row['motivo'],
+                    estado=row['estado'],
+                    motivo_rechazo=row['motivo_rechazo'],
+                    fecha_solicitud=row['fecha_solicitud'].isoformat() if row['fecha_solicitud'] else None,
+                    fecha_procesamiento=row['fecha_procesamiento'].isoformat() if row['fecha_procesamiento'] else None,
+                    procesado_por=row['procesado_por_username']
+                )
+            return None
+        except Exception as e:
+            logger.error(f"Error obteniendo aspirante: {e}")
+            return None
+    
+    def list_aspirantes_pendientes(self):
+        """Listar aspirantes con estado PENDIENTE"""
+        try:
+            query = """
+                SELECT a.*, u.nombre_usuario as procesado_por_username
+                FROM aspirantes a
+                LEFT JOIN usuarios u ON a.procesado_por = u.id
+                WHERE a.estado = 'PENDIENTE'
+                ORDER BY a.fecha_solicitud DESC
+            """
+            results = self.db.execute_query(query)
+            
+            from .storage import Aspirante
+            aspirantes = []
+            for row in results:
+                aspirantes.append(Aspirante(
+                    id=row['id'],
+                    nombre=row['nombre'],
+                    apellido=row['apellido'],
+                    edad=row['edad'],
+                    telefono=row['telefono'],
+                    email=row['email'],
+                    motivo=row['motivo'],
+                    estado=row['estado'],
+                    motivo_rechazo=row['motivo_rechazo'],
+                    fecha_solicitud=row['fecha_solicitud'].isoformat() if row['fecha_solicitud'] else None,
+                    fecha_procesamiento=row['fecha_procesamiento'].isoformat() if row['fecha_procesamiento'] else None,
+                    procesado_por=row['procesado_por_username']
+                ))
+            
+            return aspirantes
+        except Exception as e:
+            logger.error(f"Error listando aspirantes: {e}")
+            return []
+    
+    def reject_aspirante(self, aspirante_id: int, motivo_rechazo: str, actor_username: str):
+        """Rechazar aspirante"""
+        try:
+            actor = self.find_user_by_login(actor_username)
+            if not actor:
+                raise ValueError("Usuario no encontrado")
+            
+            query = """
+                UPDATE aspirantes 
+                SET estado = 'RECHAZADO', 
+                    motivo_rechazo = %s,
+                    fecha_procesamiento = NOW(),
+                    procesado_por = %s
+                WHERE id = %s AND estado = 'PENDIENTE'
+            """
+            rows_affected = self.db.execute_update(query, (motivo_rechazo, actor.id, aspirante_id))
+            
+            if rows_affected == 0:
+                raise ValueError("Aspirante no encontrado o ya fue procesado")
+            
+            return self.get_aspirante_by_id(aspirante_id)
+            
+        except Exception as e:
+            raise ValueError(str(e))
+    
+    def accept_aspirante(self, aspirante_id: int, actor_username: str):
+        """Aceptar aspirante (marcar como ACEPTADO)"""
+        try:
+            actor = self.find_user_by_login(actor_username)
+            if not actor:
+                raise ValueError("Usuario no encontrado")
+            
+            query = """
+                UPDATE aspirantes 
+                SET estado = 'ACEPTADO',
+                    fecha_procesamiento = NOW(),
+                    procesado_por = %s
+                WHERE id = %s AND estado = 'PENDIENTE'
+            """
+            rows_affected = self.db.execute_update(query, (actor.id, aspirante_id))
+            
+            if rows_affected == 0:
+                raise ValueError("Aspirante no encontrado o ya fue procesado")
+            
+            return self.get_aspirante_by_id(aspirante_id)
+            
+        except Exception as e:
+            raise ValueError(str(e))
 
 db = DatabaseStorage()

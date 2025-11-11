@@ -12,6 +12,8 @@ from .storage import db, User as UserModel, Donation as DonationModel, Event as 
 from . import users_pb2, users_pb2_grpc
 from . import inventory_pb2, inventory_pb2_grpc
 from . import events_pb2, events_pb2_grpc
+from .storage import Aspirante as AspiranteModel
+from . import aspirantes_pb2, aspirantes_pb2_grpc
 from google.protobuf.empty_pb2 import Empty
 
 # Helpers
@@ -636,15 +638,152 @@ class EventosService(events_pb2_grpc.EventosServiceServicer):
             items.append(events_pb2.Event(id=e.id, name=e.name, description=e.description, when_iso=e.when_iso, members=e.members))
         return events_pb2.EventList(events=items)
 
+# ---- AspirantesService ----
+class AspirantesService(aspirantes_pb2_grpc.AspirantesServiceServicer):
+    
+    def CreateAspirante(self, request, context):
+        """Crear solicitud de aspirante (sin autenticación - formulario público)"""
+        if not request.nombre or not request.apellido or not request.email or not request.motivo:
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT, "Nombre, apellido, email y motivo son obligatorios")
+        
+        aspirante = AspiranteModel(
+            id=0,
+            nombre=request.nombre,
+            apellido=request.apellido,
+            edad=request.edad if request.edad > 0 else None,
+            telefono=request.telefono or None,
+            email=request.email,
+            motivo=request.motivo,
+            estado='PENDIENTE'
+        )
+        
+        try:
+            created = db.create_aspirante(aspirante)
+        except ValueError as e:
+            context.abort(grpc.StatusCode.ALREADY_EXISTS, str(e))
+        
+        return aspirantes_pb2.Aspirante(
+            id=created.id,
+            nombre=created.nombre,
+            apellido=created.apellido,
+            edad=created.edad or 0,
+            telefono=created.telefono or "",
+            email=created.email,
+            motivo=created.motivo,
+            estado=aspirantes_pb2.EstadoAspirante.Value(created.estado),
+            motivo_rechazo=created.motivo_rechazo or "",
+            fecha_solicitud=created.fecha_solicitud or "",
+            fecha_procesamiento=created.fecha_procesamiento or "",
+            procesado_por=created.procesado_por or ""
+        )
+    
+    def GetAspirante(self, request, context):
+        """Obtener un aspirante por ID (solo PRESIDENTE)"""
+        actor = require_user(request.actor_username)
+        if not actor or not can_manage_users(actor.role):
+            context.abort(grpc.StatusCode.PERMISSION_DENIED, "No autorizado")
+        
+        aspirante = db.get_aspirante_by_id(request.id)
+        if not aspirante:
+            context.abort(grpc.StatusCode.NOT_FOUND, "Aspirante no encontrado")
+        
+        return aspirantes_pb2.Aspirante(
+            id=aspirante.id,
+            nombre=aspirante.nombre,
+            apellido=aspirante.apellido,
+            edad=aspirante.edad or 0,
+            telefono=aspirante.telefono or "",
+            email=aspirante.email,
+            motivo=aspirante.motivo,
+            estado=aspirantes_pb2.EstadoAspirante.Value(aspirante.estado),
+            motivo_rechazo=aspirante.motivo_rechazo or "",
+            fecha_solicitud=aspirante.fecha_solicitud or "",
+            fecha_procesamiento=aspirante.fecha_procesamiento or "",
+            procesado_por=aspirante.procesado_por or ""
+        )
+    
+    def ListAspirantesPendientes(self, request, context):
+        """Listar aspirantes pendientes"""
+        aspirantes = db.list_aspirantes_pendientes()
+        items = []
+        
+        for a in aspirantes:
+            items.append(aspirantes_pb2.Aspirante(
+                id=a.id,
+                nombre=a.nombre,
+                apellido=a.apellido,
+                edad=a.edad or 0,
+                telefono=a.telefono or "",
+                email=a.email,
+                motivo=a.motivo,
+                estado=aspirantes_pb2.EstadoAspirante.Value(a.estado),
+                motivo_rechazo=a.motivo_rechazo or "",
+                fecha_solicitud=a.fecha_solicitud or "",
+                fecha_procesamiento=a.fecha_procesamiento or "",
+                procesado_por=a.procesado_por or ""
+            ))
+        
+        return aspirantes_pb2.AspiranteList(aspirantes=items)
+    
+    def RejectAspirante(self, request, context):
+        """Rechazar aspirante (solo PRESIDENTE)"""
+        actor = require_user(request.actor_username)
+        if not actor or not can_manage_users(actor.role):
+            context.abort(grpc.StatusCode.PERMISSION_DENIED, "No autorizado")
+        
+        if not request.motivo_rechazo:
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT, "El motivo de rechazo es obligatorio")
+        
+        try:
+            aspirante = db.reject_aspirante(request.id, request.motivo_rechazo, request.actor_username)
+            if not aspirante:
+                context.abort(grpc.StatusCode.NOT_FOUND, "Aspirante no encontrado")
+        except ValueError as e:
+            context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(e))
+        
+        return aspirantes_pb2.Aspirante(
+            id=aspirante.id,
+            nombre=aspirante.nombre,
+            apellido=aspirante.apellido,
+            edad=aspirante.edad or 0,
+            telefono=aspirante.telefono or "",
+            email=aspirante.email,
+            motivo=aspirante.motivo,
+            estado=aspirantes_pb2.EstadoAspirante.Value(aspirante.estado),
+            motivo_rechazo=aspirante.motivo_rechazo or "",
+            fecha_solicitud=aspirante.fecha_solicitud or "",
+            fecha_procesamiento=aspirante.fecha_procesamiento or "",
+            procesado_por=aspirante.procesado_por or ""
+        )
+    
+    def AcceptAspirante(self, request, context):
+        """Aceptar aspirante - marcarlo como ACEPTADO (solo PRESIDENTE)"""
+        actor = require_user(request.actor_username)
+        if not actor or not can_manage_users(actor.role):
+            context.abort(grpc.StatusCode.PERMISSION_DENIED, "No autorizado")
+        
+        try:
+            aspirante = db.accept_aspirante(request.id, request.actor_username)
+            if not aspirante:
+                context.abort(grpc.StatusCode.NOT_FOUND, "Aspirante no encontrado")
+        except ValueError as e:
+            context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(e))
+        
+        return aspirantes_pb2.Aspirante(
+            id=aspirante.id,
+            nombre=aspirante.nombre,
+            apellido=aspirante.apellido,
+            edad=aspirante.edad or 0,
+            telefono=aspirante.telefono or "",
+            email=aspirante.email,
+            motivo=aspirante.motivo,
+            estado=aspirantes_pb2.EstadoAspirante.Value(aspirante.estado),
+            motivo_rechazo=aspirante.motivo_rechazo or "",
+            fecha_solicitud=aspirante.fecha_solicitud or "",
+            fecha_procesamiento=aspirante.fecha_procesamiento or "",
+            procesado_por=aspirante.procesado_por or ""
+        )   
+
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    users_pb2_grpc.add_UsuariosServiceServicer_to_server(UsuariosService(), server)
-    inventory_pb2_grpc.add_DonacionesServiceServicer_to_server(DonacionesService(), server)
-    events_pb2_grpc.add_EventosServiceServicer_to_server(EventosService(), server)
-    server.add_insecure_port("[::]:50051")
-    print("gRPC server listening on :50051")
-    server.start()
-    server.wait_for_termination()
-
-if __name__ == "__main__":
-    serve()
+    users_pb

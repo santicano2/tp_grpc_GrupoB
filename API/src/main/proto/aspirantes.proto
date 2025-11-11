@@ -1,0 +1,62 @@
+syntax = "proto3";
+package ong.aspirantes;
+
+import "google/protobuf/empty.proto";
+
+enum EstadoAspirante {
+  PENDIENTE = 0;
+  ACEPTADO = 1;
+  RECHAZADO = 2;
+}
+
+message Aspirante {
+  int32 id = 1;
+  string nombre = 2;
+  string apellido = 3;
+  int32 edad = 4;
+  string telefono = 5;
+  string email = 6;
+  string motivo = 7;
+  EstadoAspirante estado = 8;
+  string motivo_rechazo = 9;
+  string fecha_solicitud = 10;
+  string fecha_procesamiento = 11;
+  string procesado_por = 12;
+}
+
+message CreateAspiranteRequest {
+  string nombre = 1;
+  string apellido = 2;
+  int32 edad = 3;
+  string telefono = 4;
+  string email = 5;
+  string motivo = 6;
+}
+
+message AspiranteIdRequest {
+  string actor_username = 1;
+  int32 id = 2;
+}
+
+message RejectAspiranteRequest {
+  string actor_username = 1;
+  int32 id = 2;
+  string motivo_rechazo = 3;
+}
+
+message AcceptAspiranteRequest {
+  string actor_username = 1;
+  int32 id = 2;
+}
+
+message AspiranteList {
+  repeated Aspirante aspirantes = 1;
+}
+
+service AspirantesService {
+  rpc CreateAspirante(CreateAspiranteRequest) returns (Aspirante);
+  rpc GetAspirante(AspiranteIdRequest) returns (Aspirante);
+  rpc ListAspirantesPendientes(google.protobuf.Empty) returns (AspiranteList);
+  rpc RejectAspirante(RejectAspiranteRequest) returns (Aspirante);
+  rpc AcceptAspirante(AcceptAspiranteRequest) returns (Aspirante);
+}
