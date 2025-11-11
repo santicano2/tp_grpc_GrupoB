@@ -1,4 +1,4 @@
-import { Users, Package, Calendar, Home, LogOut, Menu, X, Send, Globe, FileText, CalendarCheck, Network } from "lucide-react";
+import { Users, Package, Calendar, Home, LogOut, Menu, X, Send, Globe, FileText, CalendarCheck, Network, UserPlus } from "lucide-react";
 
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -17,6 +17,12 @@ const Sidebar = ({ isOpen, onToggle, activeSection, onSectionChange }) => {
       label: "Gestión de Usuarios",
       icon: Users,
       roles: ["PRESIDENTE"],
+    },
+    {
+    id: "aspirantes",
+    label: "Aspirantes",
+    icon: UserPlus,
+    roles: ["PRESIDENTE"],
     },
     {
       id: "inventory",

@@ -14,6 +14,8 @@ import EventosExternosManagement from "./components/eventos-externos/EventosExte
 import DonationReportViewer from "./components/reports/DonationReportViewer";
 import EventsReportViewer from "./components/reports/EventsReportViewer";
 import PresidentesONGsViewer from "./components/reports/PresidentesONGsViewer";
+import AspiranteManagement from "./components/aspirantes/AspiranteManagement";
+import AspirantePublicForm from "./components/aspirantes/AspirantePublicForm";
 import Sidebar from "./components/layout/Sidebar";
 
 
@@ -36,6 +38,11 @@ const AppContent = () => {
         </div>
       </div>
     );
+  }
+
+  // Permitir acceso público al formulario de aspirantes
+  if (activeSection === "aspirante-publico") {
+    return <AspirantePublicForm />;
   }
 
   if (!isAuthenticated) {
@@ -62,6 +69,8 @@ const AppContent = () => {
         return <EventsReportViewer />;
       case "red-ongs":
         return <PresidentesONGsViewer />;
+      case "aspirantes":
+        return <AspiranteManagement />;
       default:
         return <Dashboard />;
     }
