@@ -786,4 +786,14 @@ class AspirantesService(aspirantes_pb2_grpc.AspirantesServiceServicer):
 
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    users_pb
+    users_pb2_grpc.add_UsuariosServiceServicer_to_server(UsuariosService(), server)
+    inventory_pb2_grpc.add_DonacionesServiceServicer_to_server(DonacionesService(), server)
+    events_pb2_grpc.add_EventosServiceServicer_to_server(EventosService(), server)
+    aspirantes_pb2_grpc.add_AspirantesServiceServicer_to_server(AspirantesService(), server)  
+    server.add_insecure_port("[::]:50051")
+    print("gRPC server listening on :50051")
+    server.start()
+    server.wait_for_termination()
+
+if __name__ == '__main__':
+    serve()
