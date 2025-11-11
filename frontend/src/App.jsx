@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Menu } from "lucide-react";
 
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
@@ -23,6 +23,26 @@ const AppContent = () => {
   const { isAuthenticated, isLoading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("dashboard");
+
+  // Leer el hash de la URL al cargar y cuando cambie
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1); // Remover el #
+      if (hash) {
+        setActiveSection(hash);
+      }
+    };
+
+    // Leer el hash inicial
+    handleHashChange();
+
+    // Escuchar cambios en el hash
+    window.addEventListener("hashchange", handleHashChange);
+
+    return () => {
+      window.removeEventListener("hashchange", handleHashChange);
+    };
+  }, []);
 
   if (isLoading) {
     return (

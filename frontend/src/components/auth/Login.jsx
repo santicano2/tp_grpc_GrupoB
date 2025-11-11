@@ -117,6 +117,14 @@ const Login = () => {
             {isLoading ? "Iniciando sesión..." : "Iniciar sesión"}
           </Button>
 
+          <button
+            type="button"
+            onClick={() => window.location.href = "/#aspirante-publico"}
+            className="w-full mt-3 py-2 px-4 border-2 border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium"
+          >
+           ¡Quiero Sumarme!
+          </button>
+
           {/* Usuarios de prueba */}
           <div className="mt-6 p-4 bg-gray-50 rounded-lg">
             <p className="text-xs text-gray-600 mb-2">Usuarios de prueba:</p>

@@ -317,7 +317,18 @@ const AspirantePublicForm = () => {
               para completar tu registro.
             </p>
           </div>
-
+            <div className="space-y-3">
+            <button
+              type="button"
+              onClick={() => {
+                window.location.hash = "";
+                window.location.reload();
+              }}
+              className="w-full bg-blue-600 text-white py-2.5 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            >
+              Volver al inicio
+            </button>
+            </div>
           <button
             type="submit"
             disabled={isSubmitting}
