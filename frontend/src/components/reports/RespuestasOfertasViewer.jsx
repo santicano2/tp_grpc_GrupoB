@@ -58,8 +58,8 @@ const RespuestasOfertasViewer = () => {
   if (!user || !["PRESIDENTE", "VOCAL"].includes(user.role)) {
     return (
       <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
-        ⛔ No tenés permisos para acceder a esta sección. Solo PRESIDENTE y
-        VOCAL pueden visualizar las respuestas a ofertas.
+        No tenés permisos para acceder a esta sección. Solo PRESIDENTE y VOCAL
+        pueden visualizar las respuestas a ofertas.
       </div>
     );
   }
@@ -120,11 +120,11 @@ const RespuestasOfertasViewer = () => {
       {/* Error */}
       {(error || reportError) && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
-          ❌ {error || reportError.message}
+          {error || reportError.message}
         </div>
       )}
 
-      {/* Estadísticas */}
+      {/* Estadisticas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
@@ -178,7 +178,7 @@ const RespuestasOfertasViewer = () => {
       {/* Contenido Principal */}
       {!reportLoading && ofertas.length === 0 && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center text-gray-500">
-          📭 No hay respuestas a ofertas registradas
+          No hay respuestas a ofertas registradas
         </div>
       )}
 
@@ -215,20 +215,20 @@ const RespuestasOfertasViewer = () => {
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <p className="text-sm font-medium text-gray-900">
-                          📍 Organización: {solicitud.idOrganizacionSolicitante}
+                          Organización: {solicitud.idOrganizacionSolicitante}
                         </p>
                         <p className="text-xs text-gray-600">
-                          📅 Fecha: {formatearFecha(solicitud.fechaSolicitud)}
+                          Fecha: {formatearFecha(solicitud.fechaSolicitud)}
                         </p>
                       </div>
                       <div>
                         {solicitud.procesada ? (
                           <span className="px-3 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full">
-                            ✅ Procesada
+                            Procesada
                           </span>
                         ) : (
                           <span className="px-3 py-1 text-xs font-semibold text-yellow-800 bg-yellow-100 rounded-full">
-                            ⏳ Pendiente
+                            Pendiente
                           </span>
                         )}
                       </div>

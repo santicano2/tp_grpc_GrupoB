@@ -334,11 +334,11 @@ def save_response_to_offer(data):
             ))
         
         connection.commit()
-        logger.info(f"✅ Respuesta a oferta guardada: {id_oferta} de org {id_org_solicitante} con {len(donaciones)} donaciones")
+        logger.info(f"Respuesta a oferta guardada: {id_oferta} de org {id_org_solicitante} con {len(donaciones)} donaciones")
         return True
         
     except Error as e:
-        logger.error(f"❌ Error guardando respuesta a oferta: {e}")
+        logger.error(f"Error guardando respuesta a oferta: {e}")
         if connection:
             connection.rollback()
         return False
@@ -721,7 +721,7 @@ async def get_transferencias_recibidas():
 
 @app.get("/respuestas-ofertas")
 async def get_respuestas_ofertas():
-    """Obtiene las respuestas/solicitudes a nuestras ofertas agrupadas por ID de oferta"""
+    """Obtiene las respuesta/solicitudes a nuestras ofertas agrupadas por ID de oferta"""
     try:
         connection = get_db_connection()
         if not connection:
@@ -746,7 +746,7 @@ async def get_respuestas_ofertas():
         cursor.execute(query)
         rows = cursor.fetchall()
         
-        # Agrupar por oferta
+        # agrupar por oferta
         ofertas_dict = {}
         for row in rows:
             oferta_id = str(row['id_oferta'])
@@ -757,7 +757,7 @@ async def get_respuestas_ofertas():
                     'solicitudes': []
                 }
             
-            # Buscar si ya existe una solicitud de esta organización
+            # buscar si ya existe una solicitud de esta organizacion
             solicitud_existente = next(
                 (s for s in ofertas_dict[oferta_id]['solicitudes'] 
                  if s['idOrganizacionSolicitante'] == row['id_organizacion_solicitante']),
@@ -765,14 +765,14 @@ async def get_respuestas_ofertas():
             )
             
             if solicitud_existente:
-                # Agregar donación a solicitud existente
+                # agregar donacion a solicitud existente
                 solicitud_existente['donaciones'].append({
                     'categoria': row['categoria'],
                     'descripcion': row['descripcion'],
                     'cantidad': row['cantidad']
                 })
             else:
-                # Crear nueva solicitud
+                # crear nueva solicitud
                 ofertas_dict[oferta_id]['solicitudes'].append({
                     'idOrganizacionSolicitante': row['id_organizacion_solicitante'],
                     'fechaSolicitud': row['fecha_solicitud'].isoformat() if row['fecha_solicitud'] else None,
@@ -1014,15 +1014,24 @@ def process_response_to_offer(message):
         data = message.value
         id_oferta = data.get('idOferta') or data.get('id_oferta')
         id_org_solicitante = data.get('idOrganizacionSolicitante') or data.get('id_organizacion_solicitante')
+        if not id_org_solicitante:
+            topic = getattr(message, 'topic', None)
+            if topic:
+                try:
+                    id_org_solicitante = topic.split('-')[-1]
+                    data['idOrganizacionSolicitante'] = id_org_solicitante
+                    data['id_organizacion_solicitante'] = id_org_solicitante
+                except Exception:
+                    id_org_solicitante = None
         donaciones = data.get('donaciones', [])
         
-        logger.info(f"📬 Respuesta a oferta {id_oferta} de organización {id_org_solicitante} con {len(donaciones)} donaciones")
-        
+        logger.info(f"Respuesta a oferta {id_oferta} de organización {id_org_solicitante} con {len(donaciones)} donaciones")
+
         # Guardar en base de datos
         save_response_to_offer(data)
-        
+
     except Exception as e:
-        logger.error(f"❌ Error procesando respuesta a oferta: {e}")
+        logger.error(f"Error procesando respuesta a oferta: {e}")
 
 def start_kafka_consumers():
     """Inicia los consumidores de Kafka en hilos separados"""
@@ -1062,7 +1071,7 @@ def start_kafka_consumers():
         (None, process_transferencia_donaciones, "transferencias", r'^transferencia-donaciones-.*'),
         # Pattern para capturar todos los topics de adhesiones (adhesion-evento-*)
         (None, process_adhesion_evento, "adhesiones", r'^adhesion-evento-.*'),
-        # Pattern para capturar respuestas a nuestras ofertas (respuesta-oferta-*)
+        # Pattern para capturar respuesta a nuestras ofertas (respuesta-oferta-*)
         (None, process_response_to_offer, "respuestas_ofertas", r'^respuesta-oferta-.*'),
     ]
     

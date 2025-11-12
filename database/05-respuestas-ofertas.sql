@@ -1,4 +1,3 @@
--- Tabla para almacenar respuestas a nuestras ofertas de donaciones
 CREATE TABLE IF NOT EXISTS respuestas_ofertas (
     id INT AUTO_INCREMENT PRIMARY KEY,
     id_oferta BIGINT NOT NULL,

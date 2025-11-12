@@ -1,4 +1,5 @@
 import strawberry
+import requests
 from typing import List, Optional
 from datetime import datetime
 from collections import defaultdict
@@ -206,20 +207,19 @@ class Query:
     @strawberry.field
     def respuestas_ofertas_report(self, info, actor_username: str) -> RespuestasOfertasReport:
         """Obtiene las respuestas/solicitudes a nuestras ofertas agrupadas por ID de oferta"""
-        import requests
         
         # solo PRESIDENTE o VOCAL pueden ver el informe
         user: User = db.find_user_by_login(actor_username)
         if not user or not user.active or not can_manage_inventory(user.role):
             raise Exception("No autorizado: solo PRESIDENTE o VOCAL pueden acceder a este informe.")
         
-        # Llamar al Kafka Server para obtener los datos
+        # llamar al Kafka Server para obtener los datos
         try:
             response = requests.get("http://kafka-server:8090/respuestas-ofertas", timeout=10.0)
             response.raise_for_status()
             data = response.json()
             
-            # Transformar los datos al formato GraphQL
+            # transformar los datos al formato GraphQL
             ofertas = []
             for oferta_data in data.get("respuestasOfertas", []):
                 solicitudes = []
