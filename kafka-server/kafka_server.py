@@ -18,6 +18,9 @@ import mysql.connector
 from mysql.connector import Error
 
 from kafka_manager import KafkaManager
+# ⬇️⬇️⬇️ NUEVO: Importar email_service ⬇️⬇️⬇️
+from email_service import email_service
+# ⬆️⬆️⬆️ FIN NUEVO ⬆️⬆️⬆️
 
 # variable global para el manager
 kafka_manager = None
@@ -184,6 +187,7 @@ def save_external_donation_offer(data):
         if connection and connection.is_connected():
             cursor.close()
             connection.close()
+
 def save_external_event(data):
     """Guarda un evento solidario externo en la BD"""
     try:
@@ -889,6 +893,35 @@ def process_adhesion_evento(message):
     except Exception as e:
         logger.error(f"Error procesando adhesión: {e}")
 
+# ⬇️⬇️⬇️ NUEVO: Procesador de aspirantes rechazados ⬇️⬇️⬇️
+def process_aspirante_rechazado(message):
+    """Procesa mensajes del topic preregistro/rechazados y envía emails"""
+    try:
+        data = message.value
+        email = data.get('email')
+        nombre = data.get('nombre')
+        apellido = data.get('apellido')
+        motivo = data.get('motivo')
+        
+        logger.info(f"📧 Procesando rechazo para: {nombre} {apellido} ({email})")
+        
+        # Enviar email
+        success = email_service.send_rejection_email(
+            email=email,
+            nombre=nombre,
+            apellido=apellido,
+            motivo=motivo
+        )
+        
+        if success:
+            logger.info(f"✅ Email de rechazo enviado a {email}")
+        else:
+            logger.error(f"❌ Error enviando email a {email}")
+        
+    except Exception as e:
+        logger.error(f"Error procesando aspirante rechazado: {e}")
+# ⬆️⬆️⬆️ FIN NUEVO ⬆️⬆️⬆️
+
 def start_kafka_consumers():
     """Inicia los consumidores de Kafka en hilos separados"""
     
@@ -927,6 +960,9 @@ def start_kafka_consumers():
         (None, process_transferencia_donaciones, "transferencias", r'^transferencia-donaciones-.*'),
         # Pattern para capturar todos los topics de adhesiones (adhesion-evento-*)
         (None, process_adhesion_evento, "adhesiones", r'^adhesion-evento-.*'),
+        # ⬇️⬇️⬇️ NUEVO: Consumidor de aspirantes rechazados ⬇️⬇️⬇️
+        (["preregistro/rechazados"], process_aspirante_rechazado, "aspirantes_rechazados", None),
+        # ⬆️⬆️⬆️ FIN NUEVO ⬆️⬆️⬆️
     ]
     
     for topics, processor, group_suffix, pattern in consumers:

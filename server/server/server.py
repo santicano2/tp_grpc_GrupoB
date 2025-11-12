@@ -3,6 +3,12 @@ from concurrent import futures
 from datetime import datetime, timezone
 import secrets
 import logging
+import sys
+import os
+
+# ⬇️⬇️⬇️ NUEVO: Agregar path para importar kafka_manager ⬇️⬇️⬇️
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'kafka-server'))
+# ⬆️⬆️⬆️ FIN NUEVO ⬆️⬆️⬆️
 
 from .auth import (
     can_manage_users, can_manage_inventory, can_manage_events, can_participate_events
@@ -638,7 +644,7 @@ class EventosService(events_pb2_grpc.EventosServiceServicer):
             items.append(events_pb2.Event(id=e.id, name=e.name, description=e.description, when_iso=e.when_iso, members=e.members))
         return events_pb2.EventList(events=items)
 
-# ---- AspirantesService ----
+     # ---- AspirantesService ----
 class AspirantesService(aspirantes_pb2_grpc.AspirantesServiceServicer):
     
     def CreateAspirante(self, request, context):
@@ -741,6 +747,24 @@ class AspirantesService(aspirantes_pb2_grpc.AspirantesServiceServicer):
         except ValueError as e:
             context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(e))
         
+        # ⬇️⬇️⬇️ NUEVO: Publicar a Kafka ⬇️⬇️⬇️
+        try:
+            if 'kafka_manager' in globals() and kafka_manager is not None:
+                message = {
+                    "email": aspirante.email,
+                    "nombre": aspirante.nombre,
+                    "apellido": aspirante.apellido,
+                    "motivo": aspirante.motivo_rechazo
+                }
+                kafka_manager.send_message(topic="preregistro/rechazados", message=message)
+                logging.info(f"✅ Mensaje de rechazo publicado a Kafka para {aspirante.email}")
+            else:
+                logging.warning("⚠️ Kafka no disponible, email no será enviado automáticamente")
+        except Exception as e:
+            # No fallar si Kafka no está disponible
+            logging.error(f"❌ Error publicando a Kafka: {str(e)}")
+        # ⬆️⬆️⬆️ FIN NUEVO ⬆️⬆️⬆️
+        
         return aspirantes_pb2.Aspirante(
             id=aspirante.id,
             nombre=aspirante.nombre,
@@ -785,15 +809,27 @@ class AspirantesService(aspirantes_pb2_grpc.AspirantesServiceServicer):
         )   
 
 def serve():
+    # ⬇️⬇️⬇️ NUEVO: Inicializar Kafka Manager ⬇️⬇️⬇️
+    try:
+        from kafka_manager import KafkaManager
+        global kafka_manager
+        kafka_manager = KafkaManager()
+        kafka_manager.create_required_topics()
+        logging.info("✅ Kafka Manager inicializado")
+    except Exception as e:
+        logging.warning(f"⚠️ Kafka no disponible: {e}. Continuando sin Kafka...")
+        kafka_manager = None
+    # ⬆️⬆️⬆️ FIN NUEVO ⬆️⬆️⬆️
+    
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     users_pb2_grpc.add_UsuariosServiceServicer_to_server(UsuariosService(), server)
     inventory_pb2_grpc.add_DonacionesServiceServicer_to_server(DonacionesService(), server)
     events_pb2_grpc.add_EventosServiceServicer_to_server(EventosService(), server)
-    aspirantes_pb2_grpc.add_AspirantesServiceServicer_to_server(AspirantesService(), server)  
+    aspirantes_pb2_grpc.add_AspirantesServiceServicer_to_server(AspirantesService(), server)
     server.add_insecure_port("[::]:50051")
     print("gRPC server listening on :50051")
     server.start()
     server.wait_for_termination()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     serve()

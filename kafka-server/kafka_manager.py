@@ -60,6 +60,12 @@ class KafkaManager:
                 name="baja-evento-solidario",
                 num_partitions=3,
                 replication_factor=1
+            ),
+            # NUEVO: Topic para aspirantes rechazados
+            NewTopic(
+                name="preregistro/rechazados",
+                num_partitions=1,
+                replication_factor=1
             )
         ]
         
@@ -120,7 +126,7 @@ class KafkaManager:
         """
         try:
             # asegurar que el topic dinamico existe
-            if topic.startswith('transferencia-donaciones-') or topic.startswith('adhesion-evento-'):
+            if topic.startswith('transferencia-donaciones-') or topic.startswith('adhesion-evento-') or topic == 'preregistro/rechazados':
                 self.create_dynamic_topic(topic)
             
             future = self.producer.send(topic, value=message, key=key)
