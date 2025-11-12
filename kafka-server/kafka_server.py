@@ -895,7 +895,7 @@ def process_adhesion_evento(message):
 
 # ⬇️⬇️⬇️ NUEVO: Procesador de aspirantes rechazados ⬇️⬇️⬇️
 def process_aspirante_rechazado(message):
-    """Procesa mensajes del topic preregistro/rechazados y envía emails"""
+    """Procesa mensajes del topic preregistro-rechazados y envía emails"""
     try:
         data = message.value
         email = data.get('email')
@@ -961,7 +961,7 @@ def start_kafka_consumers():
         # Pattern para capturar todos los topics de adhesiones (adhesion-evento-*)
         (None, process_adhesion_evento, "adhesiones", r'^adhesion-evento-.*'),
         # ⬇️⬇️⬇️ NUEVO: Consumidor de aspirantes rechazados ⬇️⬇️⬇️
-        (["preregistro/rechazados"], process_aspirante_rechazado, "aspirantes_rechazados", None),
+        (["preregistro-rechazados"], process_aspirante_rechazado, "aspirantes_rechazados", None),
         # ⬆️⬆️⬆️ FIN NUEVO ⬆️⬆️⬆️
     ]
     

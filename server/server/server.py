@@ -756,7 +756,7 @@ class AspirantesService(aspirantes_pb2_grpc.AspirantesServiceServicer):
                     "apellido": aspirante.apellido,
                     "motivo": aspirante.motivo_rechazo
                 }
-                kafka_manager.send_message(topic="preregistro/rechazados", message=message)
+                kafka_manager.send_message(topic="preregistro-rechazados", message=message)
                 logging.info(f"✅ Mensaje de rechazo publicado a Kafka para {aspirante.email}")
             else:
                 logging.warning("⚠️ Kafka no disponible, email no será enviado automáticamente")
@@ -809,17 +809,16 @@ class AspirantesService(aspirantes_pb2_grpc.AspirantesServiceServicer):
         )   
 
 def serve():
-    # ⬇️⬇️⬇️ NUEVO: Inicializar Kafka Manager ⬇️⬇️⬇️
+    # Inicializar Kafka Manager
     try:
-        from kafka_manager import KafkaManager
+        from . import kafka_manager as km_module  # ✅ Import relativo
         global kafka_manager
-        kafka_manager = KafkaManager()
+        kafka_manager = km_module.KafkaManager()
         kafka_manager.create_required_topics()
         logging.info("✅ Kafka Manager inicializado")
     except Exception as e:
         logging.warning(f"⚠️ Kafka no disponible: {e}. Continuando sin Kafka...")
         kafka_manager = None
-    # ⬆️⬆️⬆️ FIN NUEVO ⬆️⬆️⬆️
     
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     users_pb2_grpc.add_UsuariosServiceServicer_to_server(UsuariosService(), server)
