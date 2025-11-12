@@ -115,6 +115,8 @@ services:
   kafka-server:
     build: ./kafka-server
     container_name: kafka_server
+    env_file:
+      - ./kafka-server/.env
     environment:
       DB_HOST: mysql
       DB_PORT: 3306
@@ -157,6 +159,16 @@ services:
       - API_SERVICE_URL=http://api:8080 
     depends_on:
       - api
+
+  #  MailHog 
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: empuje_mailhog
+    ports:
+      - "8025:8025"  # Web UI para ver los emails
+      - "1025:1025"  # Puerto SMTP para recibir emails
+    restart: unless-stopped
+  # ⬆
 
 volumes:
   mysql_data:
