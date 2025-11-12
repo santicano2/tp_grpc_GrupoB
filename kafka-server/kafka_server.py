@@ -18,9 +18,8 @@ import mysql.connector
 from mysql.connector import Error
 
 from kafka_manager import KafkaManager
-# ⬇️⬇️⬇️ NUEVO: Importar email_service ⬇️⬇️⬇️
+#  Importar email_service 
 from email_service import email_service
-# ⬆️⬆️⬆️ FIN NUEVO ⬆️⬆️⬆️
 
 # variable global para el manager
 kafka_manager = None
@@ -893,7 +892,7 @@ def process_adhesion_evento(message):
     except Exception as e:
         logger.error(f"Error procesando adhesión: {e}")
 
-# ⬇️⬇️⬇️ NUEVO: Procesador de aspirantes rechazados ⬇️⬇️⬇️
+#  Procesador de aspirantes rechazados
 def process_aspirante_rechazado(message):
     """Procesa mensajes del topic preregistro-rechazados y envía emails"""
     try:
@@ -920,7 +919,7 @@ def process_aspirante_rechazado(message):
         
     except Exception as e:
         logger.error(f"Error procesando aspirante rechazado: {e}")
-# ⬆️⬆️⬆️ FIN NUEVO ⬆️⬆️⬆️
+# 
 
 def start_kafka_consumers():
     """Inicia los consumidores de Kafka en hilos separados"""
@@ -960,9 +959,9 @@ def start_kafka_consumers():
         (None, process_transferencia_donaciones, "transferencias", r'^transferencia-donaciones-.*'),
         # Pattern para capturar todos los topics de adhesiones (adhesion-evento-*)
         (None, process_adhesion_evento, "adhesiones", r'^adhesion-evento-.*'),
-        # ⬇️⬇️⬇️ NUEVO: Consumidor de aspirantes rechazados ⬇️⬇️⬇️
+        # NUEVO: Consumidor de aspirantes rechazados 
         (["preregistro-rechazados"], process_aspirante_rechazado, "aspirantes_rechazados", None),
-        # ⬆️⬆️⬆️ FIN NUEVO ⬆️⬆️⬆️
+        # 
     ]
     
     for topics, processor, group_suffix, pattern in consumers:

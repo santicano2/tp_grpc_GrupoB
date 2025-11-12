@@ -6,9 +6,9 @@ import logging
 import sys
 import os
 
-# ⬇️⬇️⬇️ NUEVO: Agregar path para importar kafka_manager ⬇️⬇️⬇️
+# Agregar path para importar kafka_manager 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'kafka-server'))
-# ⬆️⬆️⬆️ FIN NUEVO ⬆️⬆️⬆️
+# 
 
 from .auth import (
     can_manage_users, can_manage_inventory, can_manage_events, can_participate_events
@@ -747,7 +747,7 @@ class AspirantesService(aspirantes_pb2_grpc.AspirantesServiceServicer):
         except ValueError as e:
             context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(e))
         
-        # ⬇️⬇️⬇️ NUEVO: Publicar a Kafka ⬇️⬇️⬇️
+        # Publicar a Kafka
         try:
             if 'kafka_manager' in globals() and kafka_manager is not None:
                 message = {
@@ -763,7 +763,7 @@ class AspirantesService(aspirantes_pb2_grpc.AspirantesServiceServicer):
         except Exception as e:
             # No fallar si Kafka no está disponible
             logging.error(f"❌ Error publicando a Kafka: {str(e)}")
-        # ⬆️⬆️⬆️ FIN NUEVO ⬆️⬆️⬆️
+        # 
         
         return aspirantes_pb2.Aspirante(
             id=aspirante.id,
